@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" data-token-id="0x1c0036006301c98318c600448244924492463843e8c00f800000000"
+     viewBox="-0.5 0 16 16" shape-rendering="crispEdges">
+    <rect x="-0.5" height="16" width="16" fill="#dadddd"/>
+    <path stroke="#000000"
+          d="M2 3 v7 M3 2 v2 M3 9 v2 M4 2 v1 M4 10 v2 M5 2 v1 M5 5 v3 M5 11 v2 M6 2 v1 M6 12 v2 M7 2 v3 M7 9 v2 M7 13 v1 M8 4 v3 M8 9 v1 M8 12 v2 M9 3 v2 M9 11 v2 M10 3 v1 M10 10 v2 M11 3 v1 M11 5 v3 M11 10 v1 M12 3 v1 M12 9 v2 M13 3 v2 M13 8 v2 M14 4 v5"/>
+</svg>

@@ -1,0 +1,78 @@
+{
+  "name": "zk-hunt",
+  "version": "0.1.0",
+  "private": true,
+  "dependencies": {
+    "@blueprintjs/core": "^4.6.0",
+    "@blueprintjs/icons": "^4.3.1",
+    "@darkforest_eth/hashing": "^6.7.29",
+    "@openzeppelin/contracts": "^4.7.0",
+    "@rainbow-me/rainbowkit": "^0.4.2",
+    "circomlib": "^2.0.5",
+    "circomlibjs": "^0.1.7",
+    "ethers": "^5.6.9",
+    "lodash": "^4.17.21",
+    "mobx": "^6.6.1",
+    "mobx-react-lite": "^3.4.0",
+    "react": "^18.2.0",
+    "react-colorful": "^5.5.1",
+    "react-dom": "^18.2.0",
+    "react-router-dom": "^6.3.0",
+    "react-scripts": "^5.0.1",
+    "react-spinners": "^0.13.3",
+    "react-toastify": "^9.0.5",
+    "snarkjs": "^0.5.0",
+    "styled-components": "^5.3.5",
+    "typescript": "^4.7.4",
+    "util": "^0.12.4",
+    "wagmi": "^0.5.9",
+    "web-vitals": "^2.1.4"
+  },
+  "scripts": {
+    "start": "set HTTPS=true && react-scripts start",
+    "build": "react-scripts build",
+    "test": "react-scripts test",
+    "eject": "react-scripts eject",
+    "deploy": "hardhat run --network localhost scripts/deploy.js"
+  },
+  "eslintConfig": {
+    "extends": [
+      "react-app",
+      "react-app/jest"
+    ]
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  },
+  "devDependencies": {
+    "@nomiclabs/hardhat-ethers": "^2.1.0",
+    "@nomiclabs/hardhat-waffle": "^2.0.0",
+    "@testing-library/jest-dom": "^5.16.4",
+    "@testing-library/react": "^13.1.1",
+    "@testing-library/user-event": "^14.2.2",
+    "@typechain/ethers-v5": "^10.1.0",
+    "@typechain/hardhat": "^6.1.2",
+    "@types/chai": "^4.3.1",
+    "@types/jest": "^28.1.5",
+    "@types/lodash": "^4.14.182",
+    "@types/mocha": "^9.1.1",
+    "@types/node": "^18.0.4",
+    "@types/react": "^18.0.15",
+    "@types/react-dom": "^18.0.6",
+    "@types/styled-components": "^5.1.25",
+    "chai": "^4.2.0",
+    "ethereum-waffle": "^3.0.0",
+    "hardhat": "^2.10.1",
+    "ts-node": "^10.9.1",
+    "typechain": "^8.1.0"
+  }
+}
