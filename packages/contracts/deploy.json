@@ -1,0 +1,32 @@
+{
+  "components": [
+    "MapDataComponent",
+    "PositionComponent",
+    "PositionCommitmentComponent",
+    "ControlledByComponent",
+    "JungleMoveCountComponent"
+  ],
+  "systems": [
+    {"name": "ComponentDevSystem", "writeAccess": ["*"]},
+    {"name": "PlainsMoveSystem", "writeAccess": ["PositionComponent"]},
+    {
+      "name": "JungleEnterSystem",
+      "writeAccess": ["PositionComponent", "PositionCommitmentComponent", "JungleMoveCountComponent"],
+      "dependencies": ["JungleEnterVerifier"]
+    },
+    {
+      "name": "JungleMoveSystem",
+      "writeAccess": ["PositionCommitmentComponent", "JungleMoveCountComponent"],
+      "dependencies": ["JungleMoveVerifier"]
+    },
+    {
+      "name": "JungleExitSystem",
+      "writeAccess": ["PositionComponent", "PositionCommitmentComponent", "JungleMoveCountComponent"],
+      "dependencies": ["deployPoseidon.js"]
+    },
+    {
+      "name": "SpawnSystem",
+      "writeAccess": ["PositionComponent", "ControlledByComponent"]
+    }
+  ]
+}

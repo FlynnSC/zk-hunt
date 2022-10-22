@@ -1,0 +1,14 @@
+{
+  "name": "circuits",
+  "license": "MIT",
+  "version": "0.2.0",
+  "private": true,
+  "scripts": {
+    "prepareCircuit": "bash prepareCircuit.sh",
+    "prepareAllCircuits": "bash prepareAllCircuits.sh"
+  },
+  "dependencies": {
+    "circomlib": "^2.0.5",
+    "snarkjs": "^0.5.0"
+  }
+}
