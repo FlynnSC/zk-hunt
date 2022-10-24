@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Unlicense
 pragma solidity >=0.8.0;
-import "std-contracts/components/Uint256Component.sol";
+import "solecs/Component.sol";
 import {Position} from "./PositionComponent.sol";
 import {GodID, MAP_SIZE} from "../Constants.sol";
 
@@ -11,14 +11,49 @@ enum TileType {
   JUNGLE
 }
 
-contract MapDataComponent is Uint256Component {
-  constructor(address world) Uint256Component(world, ID) {
-    set(GodID, uint256(0x1E07380C700882060F043F00FC23F8E0A0C001806030007830F0E001C));
+struct MapData {
+  uint256[] chunks;
+  uint256[] intermediaryNodes;
+  uint256 root; 
+}
+
+contract MapDataComponent is Component {
+  uint256 constant tilesPerChunk = 253;
+
+  constructor(address world) Component(world, ID) {}
+
+  function getSchema() public pure override returns (string[] memory keys, LibTypes.SchemaValue[] memory values) {
+    keys = new string[](3);
+    values = new LibTypes.SchemaValue[](3);
+
+    keys[0] = "chunks";
+    values[0] = LibTypes.SchemaValue.UINT256_ARRAY;
+
+    keys[1] = "intermediaryNodes";
+    values[1] = LibTypes.SchemaValue.UINT256_ARRAY;
+
+    keys[2] = "root";
+    values[2] = LibTypes.SchemaValue.UINT256;
+  }
+
+  // TODO figure out why encoding and decoding the struct directly doesn't work on the client
+  function set(uint256 entity, MapData memory value) public {
+    // set(entity, abi.encode(value));
+    set(entity, abi.encode(value.chunks, value.intermediaryNodes, value.root));
+  }
+
+  function getValue(uint256 entity) public view returns (MapData memory) {
+    // return abi.decode(getRawValue(entity), (MapData));
+    (uint256[] memory chunks, uint256[] memory intermediaryNodes, uint256 root) = 
+      abi.decode(getRawValue(entity), (uint256[], uint256[], uint256));
+    return MapData({chunks: chunks, intermediaryNodes: intermediaryNodes, root: root});
   }
 
   function getMapTileValue(Position memory position) public view returns (TileType) {
-    return TileType(
-      (getValue(GodID) >> (uint256(position.x) + uint256(position.y) * MAP_SIZE) & 1)
-    );
+    MapData memory mapData = getValue(GodID);
+    uint256 tileIndex = uint256(position.x) + uint256(position.y) * MAP_SIZE;
+    uint256 chunk = mapData.chunks[tileIndex / tilesPerChunk];
+    
+    return TileType((chunk >> (tileIndex % tilesPerChunk)) & 0x1);
   }
 }

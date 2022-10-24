@@ -42,7 +42,7 @@ contract JungleMoveSystem is MoveSystem {
         [
           positionCommitmentComponent.getValue(entity), 
           commitment, 
-          mapDataComponent.getValue(GodID)
+          mapDataComponent.getValue(GodID).root
         ]
       ),
       "Invalid proof"

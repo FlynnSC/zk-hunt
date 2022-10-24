@@ -3,6 +3,7 @@ const ethers = require('ethers');
 const fs = require('fs');
 const {Buffer} = require('node:buffer');
 
+// TODO clean up this poseidon deploy stuff
 async function deploy() {
     // 3 inputs (x, y, nonce)
     const inputCount = 3;

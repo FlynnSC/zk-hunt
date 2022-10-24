@@ -4,28 +4,25 @@ import "solecs/System.sol";
 import {IWorld} from "solecs/interfaces/IWorld.sol";
 import {TileType} from "../components/MapDataComponent.sol";
 import {MoveSystem, Position} from "./MoveSystem.sol";
-import {getAddressById} from "solecs/utils.sol";
+import {getAddressById, getSystemAddressById} from "solecs/utils.sol";
 import {JungleMoveCountComponent, ID as JungleMoveCountComponentID} from "../components/JungleMoveCountComponent.sol";
+import {PoseidonSystem, ID as PoseidonSystemID} from "./PoseidonSystem.sol";
 
-interface PoseidonContract {
-    function poseidon(uint256[3] memory inputs) external virtual returns (uint256);
-}
 
 uint256 constant ID = uint256(keccak256("zkhunt.system.JungleExit"));
 
 contract JungleExitSystem is MoveSystem {
-  PoseidonContract poseidonContract;
   JungleMoveCountComponent jungleMoveCountComponent;
+  PoseidonSystem poseidonSystem;
 
   constructor(
     IWorld _world, 
-    address _components,
-    address poseidonContractAddress
+    address _components
   ) MoveSystem(_world, _components) {
-    poseidonContract = PoseidonContract(poseidonContractAddress);
     jungleMoveCountComponent = JungleMoveCountComponent(
       getAddressById(components, JungleMoveCountComponentID)
     );
+    poseidonSystem = PoseidonSystem(getSystemAddressById(components, PoseidonSystemID));
   }
 
   function execute(bytes memory arguments) public returns (bytes memory) {
@@ -45,7 +42,7 @@ contract JungleExitSystem is MoveSystem {
     Position memory newPosition
   ) public returns (bytes memory) {
     require(
-      poseidonContract.poseidon([oldPosition.x, oldPosition.y, oldPositionNonce]) == 
+      poseidonSystem.poseidon3(oldPosition.x, oldPosition.y, oldPositionNonce) == 
         positionCommitmentComponent.getValue(entity),
       "Hash of old position and old nonce does not match the stored commitment"
     );

@@ -22,7 +22,7 @@ import { <%= component %>, ID as <%= component %>ID } from "../components/<%- co
 <% systems.forEach(system => { -%>
 import { <%= system.name %>, ID as <%= system.name %>ID } from "../systems/<%- system.name %>.sol";
 <% system.dependencies?.forEach(dependency => { -%>
-<% if (dependency.slice(-3) !== ".js") { -%>
+<% if (!dependency.endsWith(".js") && !dependency.startsWith("0x")) { -%>
 import { <%= dependency %> } from "../dependencies/<%- dependency %>.sol";
 <% } -%>
 <% }); -%>
@@ -80,12 +80,15 @@ library LibDeploy {
     console.log("Deploying <%= system.name %> dependencies");
     address[<%= system.dependencies.length %>] memory dependencies<%= system.name %>;
 <% system.dependencies.forEach((dependency, index) => { -%>
-<% if (dependency.slice(-3) === ".js") { -%>
-    string[] memory inputs = new string[](2);
-    inputs[0] = "node";
-    inputs[1] = "src/dependencies/<%= dependency %>";
-    bytes memory result = vm.ffi(inputs);
-    dependencies<%= system.name %>[<%= index %>] = abi.decode(result, (address));
+<% if (dependency.endsWith(".js")) { -%>
+    // TODO get rid of this js stuff???
+    string[] memory dep<%= index %>Inputs = new string[](2);
+    dep<%= index %>Inputs[0] = "node";
+    dep<%= index %>Inputs[1] = "src/dependencies/<%= dependency %>";
+    bytes memory dep<%= index %>Result = vm.ffi(dep<%= index %>Inputs);
+    dependencies<%= system.name %>[<%= index %>] = abi.decode(dep<%= index %>Result, (address));
+<% } else if (dependency.startsWith("0x")) { -%>
+    dependencies<%= system.name %>[<%= index %>] = address(<%= dependency %>);
 <% } else { -%>
     dependencies<%= system.name %>[<%= index %>] = address(new <%= dependency %>());
 <% } -%>
@@ -109,7 +112,25 @@ if (system.dependencies) { -%>
 <% } -%>
 <% });-%>
 <% if(system.initialize) { -%>
-    if(init) system.execute(<%= system.initialize -%>);
+    // TODO undoooo
+    // if(init) system.execute(<%= system.initialize -%>);
+    if (init) {
+        // 17230361230618923029804386078532454441100514055483021258772027460272059882604977523049704817019168378877510441677440676042879568386869989587185542080808293318765246144574207024652891540435505878696206043050453736205014197659869463563545817063857669517828758716614842610527709215790098808839
+        uint256[] memory chunks = new uint256[](8);
+        chunks[0] = uint256(0x30000008e0701400dfe07e0007c1ff8003c38381018203c70060001f00c0007);
+        chunks[1] = uint256(0x1fe0a0009fc006033f1e0c0e383c3c3c6078f03c807000e0000001c4000006);
+        chunks[2] = uint256(0x1d07cf00020e0a00001c0408002001101c0406307c1d01f0f00e03e1c01f0382);
+        chunks[3] = uint256(0x3893ffc3e1615e0383808002000000000000f00078dfe087e38);
+        // chunks[0] = uint256(0x30000000e0701400df007e0007c1408003c383811c0203c70063e01f00c0007);
+        // chunks[1] = uint256(0x174020008fc000033f1e0c06003c3c3c6068803c807000e0000001c4000006);
+        // chunks[2] = uint256(0x1d03cf0002040800001c0408002001101c0406307c150080f00e0361801f0382);
+        // chunks[3] = uint256(0x3893fcc3a1615e0383808002000000000000e000701fe085e38);
+        // chunks[4] = uint256(0x800000000000000000000000000000);
+        // chunks[5] = uint256(0x0);
+        // chunks[6] = uint256(0x0);
+        // chunks[7] = uint256(0x1c000000000f800000000070000000000200000000);
+        system.execute(abi.encode(chunks));
+    }
 <% } -%>
     console.log(address(system));
 <% });%>

@@ -1,3 +1,9 @@
+pragma circom 2.0.9;
+
+include "../../../../node_modules/circomlib/circuits/switcher.circom";
+include "../../../../node_modules/circomlib/circuits/poseidon.circom";
+include "../../../../node_modules/circomlib/circuits/bitify.circom";
+
 template CalcMerkelRoot(merkleTreeDepth) {
     signal input leaf;
     signal input leafIndex;

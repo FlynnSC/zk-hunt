@@ -1,28 +1,9 @@
 pragma circom 2.0.9;
 
-include "../../node_modules/circomlib/circuits/switcher.circom";
-include "../../node_modules/circomlib/circuits/poseidon.circom";
-include "../../node_modules/circomlib/circuits/bitify.circom";
-include "../../node_modules/circomlib/circuits/comparators.circom";
-include "calcMerkleRoot.circom";
-
-// This circuit returns the sum of the inputs.
-// n must be greater than 0.
-// Taken from https://github.com/privacy-scaling-explorations/maci/blob/v1/circuits/circom/trees/calculateTotal.circom
-// TODO probably find way to not import this rather than including it directly
-template CalculateTotal(n) {
-    signal input nums[n];
-    signal output sum;
-
-    signal sums[n];
-    sums[0] <== nums[0];
-
-    for (var i=1; i < n; i++) {
-        sums[i] <== sums[i - 1] + nums[i];
-    }
-
-    sum <== sums[n - 1];
-}
+include "../../../../node_modules/circomlib/circuits/bitify.circom";
+include "../../../../node_modules/circomlib/circuits/comparators.circom";
+include "./calcMerkleRoot.circom";
+include "./calculateTotal.circom";
 
 // Returns whether the supplied `value` is equal to any of the values in `equalTo`.
 // `count` determines how many values are in the set
@@ -38,10 +19,10 @@ template IsEqualToAny(count) {
         isEquals[i] = IsEqual();
         isEquals[i].in[0] <== value;
         isEquals[i].in[1] <== equalTo[i];
-        calculateTotal.nums[i] <== isEquals[i].out;
+        calculateTotal.in[i] <== isEquals[i].out;
     }
 
-    out <== calculateTotal.sum;
+    out <== calculateTotal.out;
 }
 
 // TODO need to audit this shit bruhhhhhhhhhh
@@ -68,7 +49,7 @@ template IntegerDivision(divisor) {
     lessThan.out === 1;
 }
 
-// Selects the value of the bit at `index` within `selectFrom`
+// Selects the value of the bit at position `index` within `selectFrom`
 template SelectBit() {
     signal input selectFrom;
     signal input index;
@@ -85,13 +66,13 @@ template SelectBit() {
 
     for (var i = 0; i < usefulBits; i++) {
         isEquals[i] = IsEqual();
-        isEquals[i].in[0] = index;
-        isEquals[i].in[1] = i;
+        isEquals[i].in[0] <== index;
+        isEquals[i].in[1] <== i;
 
-        calculateTotal.nums[i] = num2Bits[i] * isEquals[i].out;
+        calculateTotal.in[i] <== num2Bits.out[i] * isEquals[i].out;
     }
 
-    out <== calculateTotal.sum;
+    out <== calculateTotal.out;
 }
 
 // A merkle tree where every leaf is a field element, and each leaf contains
@@ -145,10 +126,10 @@ template MerkleDataAccess(merkleTreeDepth, bitsPerSegment) {
         var powerOfTwo = 2 ** (bitIndex % bitsPerSegment);
         isEqualToAnys[bitIndex].value <== bitIndex;
         var bitValue = powerOfTwo * leafBits.out[bitIndex];
-        dataSum.nums[bitIndex] <== bitValue * isEqualToAnys[bitIndex].out;
+        dataSum.in[bitIndex] <== bitValue * isEqualToAnys[bitIndex].out;
     }
 
-    out <== dataSum.sum;
+    out <== dataSum.out;
 }
 
 // TODO audit this shit bruhhhhhhhhhhhhhhh

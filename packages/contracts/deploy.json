@@ -8,6 +8,18 @@
   ],
   "systems": [
     {"name": "ComponentDevSystem", "writeAccess": ["*"]},
+    {
+      "name": "PoseidonSystem", "dependencies": [
+      "0x000000000000000000000000700b6a60ce7eaaea56f065753d8dcb9653dbad35",
+      "0x000000000000000000000000a15bb66138824a1c7167f5e85b957d04dd34e468"
+    ]
+    },
+    {
+      "TODO": "Fix up this init/poseidon stuff dude",
+      "name": "MapDataInitSystem",
+      "writeAccess": ["MapDataComponent"],
+      "initialize": "abi.encode(uint256(5))"
+    },
     {"name": "PlainsMoveSystem", "writeAccess": ["PositionComponent"]},
     {
       "name": "JungleEnterSystem",
@@ -17,12 +29,11 @@
     {
       "name": "JungleMoveSystem",
       "writeAccess": ["PositionCommitmentComponent", "JungleMoveCountComponent"],
-      "dependencies": ["JungleMoveVerifier"]
+      "dependencies": ["JungleMoveV2Verifier"]
     },
     {
       "name": "JungleExitSystem",
-      "writeAccess": ["PositionComponent", "PositionCommitmentComponent", "JungleMoveCountComponent"],
-      "dependencies": ["deployPoseidon.js"]
+      "writeAccess": ["PositionComponent", "PositionCommitmentComponent", "JungleMoveCountComponent"]
     },
     {
       "name": "SpawnSystem",

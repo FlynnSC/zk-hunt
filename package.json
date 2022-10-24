@@ -45,9 +45,9 @@
     "start:contracts": "yarn workspace contracts run start",
     "link:mud": "for i in node_modules/@latticexyz/*; do yarn link @latticexyz/$(basename $i); done",
     "unlink:mud": "for i in node_modules/@latticexyz/*; do yarn unlink @latticexyz/$(basename $i); done && yarn install --force",
-    "deploy": "cd packages/contracts && yarn deploy:anvil",
-    "prepareCircuit": "cd packages/circuits && yarn prepareCircuit",
-    "prepareAllCircuits": "cd packages/circuits && yarn prepareAllCircuits"
+    "deploy": "yarn workspace contracts run deploy",
+    "prepareCircuit": "yarn workspace circuits run prepareCircuit",
+    "prepareAllCircuits": "yarn workspace circuits run prepareAllCircuits"
   },
   "lint-staged": {
     "*.ts": "eslint --cache --fix",
