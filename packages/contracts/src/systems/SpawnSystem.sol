@@ -48,8 +48,8 @@ contract SpawnSystem is System {
     }
 
     uint256 entity = world.getUniqueEntityId();
-    positionComponent.set(entity, spawnPosition);
     controlledByComponent.set(entity, controller);
+    positionComponent.set(entity, spawnPosition);
     return entity;
   }
 }
