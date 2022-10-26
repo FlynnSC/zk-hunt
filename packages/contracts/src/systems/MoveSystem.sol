@@ -7,6 +7,7 @@ import { getAddressById } from "solecs/utils.sol";
 import {MapDataComponent, ID as MapDataComponentID, TileType} from "../components/MapDataComponent.sol";
 import {PositionComponent, ID as PositionComponentID, Position} from "../components/PositionComponent.sol";
 import {PositionCommitmentComponent, ID as PositionCommitmentComponentID} from "../components/PositionCommitmentComponent.sol";
+import {MAP_SIZE} from "../Constants.sol";
 
 function absDiff(uint8 a, uint8 b) pure returns (uint8) {
     return a > b ? a - b : b - a;
@@ -34,6 +35,12 @@ abstract contract MoveSystem is System {
     TileType fromTileType, 
     TileType toTileType
   ) internal {
+    // Move doesn't exceed map bounds
+    require(
+      newPosition.x < MAP_SIZE && newPosition.y < MAP_SIZE,
+      "Invalid move: move exceeds map bounds"
+    );
+
     // Move is from correct tile type
     require(
       mapDataComponent.getMapTileValue(oldPosition) == fromTileType, 

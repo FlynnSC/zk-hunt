@@ -4,7 +4,32 @@ include "../../../../node_modules/circomlib/circuits/switcher.circom";
 include "../../../../node_modules/circomlib/circuits/poseidon.circom";
 include "../../../../node_modules/circomlib/circuits/bitify.circom";
 
-template CalcMerkelRoot(merkleTreeDepth) {
+// Recursively calculates the merkle root of a binary tree with given `leafCount`
+template CalcMerkleRoot(leafCount) {
+    signal input in[leafCount];
+
+    signal output out;
+
+    component poseidon = Poseidon(2);
+    component calcSubMerkleRoots[2];
+    if (leafCount == 2) {
+        poseidon.inputs[0] <== in[0];
+        poseidon.inputs[1] <== in[1];
+    } else {
+        for (var i = 0; i < 2; i++) {
+            var subLeafCount = leafCount / 2;
+            calcSubMerkleRoots[i] = CalcMerkleRoot(subLeafCount);
+            for (var j = 0; j < subLeafCount; j++) {
+                calcSubMerkleRoots[i].in[j] <== in[subLeafCount * i + j];
+            }
+            poseidon.inputs[i] <== calcSubMerkleRoots[i].out;
+        }    
+    }
+
+    out <== poseidon.out;
+}
+
+template CalcMerkleRootFromPath(merkleTreeDepth) {
     signal input leaf;
     signal input leafIndex;
     signal input merkleSiblings[merkleTreeDepth];

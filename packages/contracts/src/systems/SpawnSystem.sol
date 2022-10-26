@@ -36,8 +36,9 @@ contract SpawnSystem is System {
 
     // Tries new random positions until a plains tile is chosen
     while (true) {
-      spawnPosition.x = uint8(randomSeed % MAP_SIZE);
-      spawnPosition.y = uint8((randomSeed >> 8) % MAP_SIZE);
+      // TODO undo
+      spawnPosition.x = 2; //uint8(randomSeed % MAP_SIZE);
+      spawnPosition.y = 2; //uint8((randomSeed >> 8) % MAP_SIZE);
 
       if (mapDataComponent.getMapTileValue(spawnPosition) == TileType.PLAINS) {
         break;

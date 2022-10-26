@@ -4,26 +4,7 @@ include "../../../../node_modules/circomlib/circuits/bitify.circom";
 include "../../../../node_modules/circomlib/circuits/comparators.circom";
 include "./calcMerkleRoot.circom";
 include "./calculateTotal.circom";
-
-// Returns whether the supplied `value` is equal to any of the values in `equalTo`.
-// `count` determines how many values are in the set
-template IsEqualToAny(count) {
-    signal input value;
-    signal input equalTo[count];
-
-    signal output out;
-
-    component calculateTotal = CalculateTotal(count);
-    component isEquals[count];
-    for (var i = 0; i < count; i++) {
-        isEquals[i] = IsEqual();
-        isEquals[i].in[0] <== value;
-        isEquals[i].in[1] <== equalTo[i];
-        calculateTotal.in[i] <== isEquals[i].out;
-    }
-
-    out <== calculateTotal.out;
-}
+include "./isEqualToAny.circom";
 
 // TODO need to audit this shit bruhhhhhhhhhh
 template IntegerDivision(divisor) {
@@ -99,13 +80,13 @@ template MerkleDataAccess(merkleTreeDepth, bitsPerSegment) {
     signal localSegmentIndex <== integerDivision.remainder;
 
     // Checks the supplied dataLeaf and merkleSiblings against the merkleRoot
-    component calcMerkelRoot = CalcMerkelRoot(merkleTreeDepth);
-    calcMerkelRoot.leaf <== dataLeaf;
-    calcMerkelRoot.leafIndex <== leafIndex;
+    component calcMerkleRootFromPath = CalcMerkleRootFromPath(merkleTreeDepth);
+    calcMerkleRootFromPath.leaf <== dataLeaf;
+    calcMerkleRootFromPath.leafIndex <== leafIndex;
     for (var i = 0; i < merkleTreeDepth; i++) {
-        calcMerkelRoot.merkleSiblings[i] <== merkleSiblings[i];
+        calcMerkleRootFromPath.merkleSiblings[i] <== merkleSiblings[i];
     }
-    calcMerkelRoot.out === merkleRoot;
+    calcMerkleRootFromPath.out === merkleRoot;
 
     var usefulBitCount = bitsPerSegment * segmentsPerLeaf;
     component dataSum = CalculateTotal(usefulBitCount);
@@ -153,13 +134,13 @@ template MerkleDataBitAccess(merkleTreeDepth) {
     signal localBitIndex <== integerDivision.remainder;
 
     // Checks the supplied dataLeaf and merkleSiblings against the merkleRoot
-    component calcMerkelRoot = CalcMerkelRoot(merkleTreeDepth);
-    calcMerkelRoot.leaf <== dataLeaf;
-    calcMerkelRoot.leafIndex <== leafIndex;
+    component calcMerkleRootFromPath = CalcMerkleRootFromPath(merkleTreeDepth);
+    calcMerkleRootFromPath.leaf <== dataLeaf;
+    calcMerkleRootFromPath.leafIndex <== leafIndex;
     for (var i = 0; i < merkleTreeDepth; i++) {
-        calcMerkelRoot.merkleSiblings[i] <== merkleSiblings[i];
+        calcMerkleRootFromPath.merkleSiblings[i] <== merkleSiblings[i];
     }
-    calcMerkelRoot.out === merkleRoot;
+    calcMerkleRootFromPath.out === merkleRoot;
 
     component selectBit = SelectBit();
     selectBit.selectFrom <== dataLeaf;

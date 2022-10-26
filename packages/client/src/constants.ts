@@ -1,0 +1,14 @@
+export const MAP_SIZE = 31;
+export const BITS_PER_CHUNK = 253;
+
+export enum TileType {
+  PLAINS,
+  JUNGLE,
+}
+
+export enum Direction {
+  RIGHT,
+  UP,
+  LEFT,
+  DOWN
+}

@@ -17,6 +17,7 @@ struct MapData {
   uint256 root; 
 }
 
+// TODO make SingletonComponent
 contract MapDataComponent is Component {
   uint256 constant tilesPerChunk = 253;
 
@@ -36,7 +37,7 @@ contract MapDataComponent is Component {
     values[2] = LibTypes.SchemaValue.UINT256;
   }
 
-  // TODO figure out why encoding and decoding the struct directly doesn't work on the client
+  // TODO bruh figure out why encoding and decoding the struct directly doesn't work on the client
   function set(uint256 entity, MapData memory value) public {
     // set(entity, abi.encode(value));
     set(entity, abi.encode(value.chunks, value.intermediaryNodes, value.root));
@@ -46,7 +47,7 @@ contract MapDataComponent is Component {
     // return abi.decode(getRawValue(entity), (MapData));
     (uint256[] memory chunks, uint256[] memory intermediaryNodes, uint256 root) = 
       abi.decode(getRawValue(entity), (uint256[], uint256[], uint256));
-    return MapData({chunks: chunks, intermediaryNodes: intermediaryNodes, root: root});
+    return MapData(chunks, intermediaryNodes, root);
   }
 
   function getMapTileValue(Position memory position) public view returns (TileType) {
