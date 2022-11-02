@@ -1,6 +1,6 @@
 import {defineComponent, Type, World} from '@latticexyz/recs';
 
-export function definePotentialPositionsComponent(world: World) {
+export function defineMovePathComponent(world: World) {
   return defineComponent(
     world,
     {
@@ -8,7 +8,7 @@ export function definePotentialPositionsComponent(world: World) {
       yValues: Type.NumberArray,
     },
     {
-      id: 'PotentialPositions',
+      id: 'MovePath',
     }
   );
 }

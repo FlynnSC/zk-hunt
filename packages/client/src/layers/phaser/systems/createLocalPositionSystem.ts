@@ -3,7 +3,6 @@ import {PhaserLayer} from '../types';
 import {defineComponentSystem, defineSyncSystem, EntityIndex, getComponentValue, HasValue} from '@latticexyz/recs';
 import {Sprites, TILE_HEIGHT, TILE_WIDTH} from '../constants';
 import {tileCoordToPixelCoord} from '@latticexyz/phaserx';
-import {coordsEq} from '../../../utils/coords';
 import {getMapTileValue, getParsedMapDataFromComponent} from '../../../utils/mapData';
 import {TileType} from '../../../constants';
 import {setPersistedComponent} from '../../../utils/persistedComponent';
@@ -17,7 +16,7 @@ export function createLocalPositionSystem(network: NetworkLayer, phaser: PhaserL
 
   const {
     scenes: {Main: {objectPool, config}},
-    components: {LocalPosition, TargetPosition, LocallyControlled},
+    components: {LocalPosition, LocallyControlled},
   } = phaser;
 
   // Updates locally controlled to true for entities controlled by the local player
@@ -46,17 +45,10 @@ export function createLocalPositionSystem(network: NetworkLayer, phaser: PhaserL
     }
   });
 
-  // Updates the sprite of entities when their local position changes, as well
-  // as removing the target rect when necessary
+  // Updates the sprite of entities when their local position changes
   defineComponentSystem(world, LocalPosition, ({entity, value}) => {
     const sprite = objectPool.get(entity, 'Sprite');
     const position = value[0];
-
-    // Removes the target rect if the character has moved to its location
-    const targetPosition = getComponentValue(TargetPosition, entity);
-    if (!targetPosition || coordsEq(position, targetPosition)) {
-      objectPool.remove(`${entity}targetRect`);
-    }
 
     if (position) {
       sprite.setComponent({

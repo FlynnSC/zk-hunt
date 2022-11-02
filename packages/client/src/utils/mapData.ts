@@ -1,8 +1,8 @@
 import {Coord} from '@latticexyz/utils';
 import {BITS_PER_CHUNK, MAP_SIZE, TileType} from '../constants';
 import {getComponentValueStrict} from '@latticexyz/recs';
-import {GodID} from '@latticexyz/network';
 import {defineMapDataComponent} from '../layers/network/components/MapDataComponent';
+import {getGodIndexStrict} from './entity';
 
 const ONE = BigInt(1);
 
@@ -22,8 +22,7 @@ function calcTileIndex(position: Coord) {
 export function getParsedMapDataFromComponent(
   mapDataComponent: ReturnType<typeof defineMapDataComponent>
 ): ParsedMapData {
-  const godEntityIndex = mapDataComponent.world.getEntityIndexStrict(GodID);
-  const mapData = getComponentValueStrict(mapDataComponent, godEntityIndex);
+  const mapData = getComponentValueStrict(mapDataComponent, getGodIndexStrict(mapDataComponent.world));
   const chunks = mapData.chunks.map(chunk => BigInt(chunk));
   const intermediaryNodes = mapData.intermediaryNodes.map(node => BigInt(node));
   const map = chunks.reduce((acc, chunk, index) => {

@@ -24,23 +24,26 @@ export function createJungleMovementSystem(network: NetworkLayer, phaser: Phaser
 
   const {
     scenes: {Main: {maps: {MainMap}}},
-    components: {LocalPosition, TargetPosition, PotentialPositions, LocallyControlled},
+    components: {LocalPosition, MovePath, PotentialPositions, LocallyControlled},
   } = phaser;
 
-  // When there is a position commitment, updates the local position for the local player, and
-  // updates the potential player positions for external players. Also removes the potential player
-  // positions display when a player exits the jungle
+  // When there is a change in the jungle move count, updates the local position for the local
+  // player, and updates the potential player positions for external players. Also removes the
+  // potential player positions display when a player exits the jungle
   defineComponentSystem(world, JungleMoveCount, ({entity, value}) => {
+    const moveCount = Number(value[0]?.value);
+
     // If the entity is owned by the local player, update its local position, otherwise update the
     // potential positions
     if (getComponentValue(LocallyControlled, entity)?.value) {
-      const newPosition = getComponentValue(TargetPosition, entity);
-      if (newPosition) {
-        setPersistedComponent(LocalPosition, entity, newPosition);
+      const movePath = getComponentValue(MovePath, entity);
+      // Only update the local position in response to jungle -> jungle movement (moveCount > 1)
+      if (moveCount > 1 && movePath) {
+        setPersistedComponent(
+          LocalPosition, entity, {x: movePath.xValues[0], y: movePath.yValues[0]}
+        );
       }
     } else {
-      const moveCount = Number(value[0]?.value);
-
       // The commitment will be set to zero when exiting the jungle, so remove potential player
       // positions
       if (moveCount === 0) {
@@ -84,7 +87,7 @@ export function createJungleMovementSystem(network: NetworkLayer, phaser: Phaser
     }
   });
 
-  // Updates the total potential positions overlay --
+  // Updates the total potential positions overlay
   defineComponentSystem(world, PotentialPositions, ({value}) => {
     // Removes indicators when potential player positions are removed
     if (value[0] === undefined) {

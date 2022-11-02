@@ -13,3 +13,7 @@ export function subtractCoords(a: Coord, b: Coord): Coord {
 export function calcPositionIndex(position: Coord) {
   return position.x + position.y * MAP_SIZE;
 }
+
+export function isPositionWithinMapBounds(position: Coord) {
+  return position.x >= 0 && position.x < MAP_SIZE && position.y >= 0 && position.y < MAP_SIZE;
+}

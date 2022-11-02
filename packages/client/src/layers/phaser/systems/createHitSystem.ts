@@ -6,25 +6,49 @@ import {
   EntityIndex,
   getComponentValue,
   getComponentValueStrict,
+  Has,
   HasValue,
   runQuery
 } from '@latticexyz/recs';
-import {TILE_HEIGHT, TILE_WIDTH} from '../constants';
-import {tileCoordToPixelCoord} from '@latticexyz/phaserx';
-import {coordsEq} from '../../../utils/coords';
+import {coordsEq, subtractCoords} from '../../../utils/coords';
 import {jungleHitAvoidProver} from '../../../utils/zkProving';
+import {drawRect} from '../../../utils/drawing';
+import {Direction} from '../../../constants';
+import {getGodIndexStrict} from '../../../utils/entity';
 
-export function createHitTilesSystem(network: NetworkLayer, phaser: PhaserLayer) {
+const offsetToDirection = {
+  [JSON.stringify({x: 1, y: 0})]: Direction.RIGHT,
+  [JSON.stringify({x: 0, y: -1})]: Direction.UP,
+  [JSON.stringify({x: -1, y: 0})]: Direction.LEFT,
+  [JSON.stringify({x: 0, y: 1})]: Direction.DOWN,
+};
+
+export function createHitSystem(network: NetworkLayer, phaser: PhaserLayer) {
   const {
     world,
-    api: {jungleHitAvoid, jungleHitReceive},
+    api: {createHit, jungleHitAvoid, jungleHitReceive},
     components: {HitTiles, PotentialHit},
   } = network;
 
   const {
-    scenes: {Main: {objectPool}},
-    components: {LocalPosition, LocallyControlled, Nonce},
+    scenes: {Main: {input, objectPool}},
+    components: {LocalPosition, LocallyControlled, Nonce, CursorTilePosition},
   } = phaser;
+
+  input.rightClick$.subscribe(() => {
+    const cursorPosition = getComponentValue(CursorTilePosition, getGodIndexStrict(world));
+    const controlledEntities = runQuery([Has(LocallyControlled)]);
+    if (controlledEntities.size > 0 && cursorPosition) {
+      const entityIndex = Array.from(controlledEntities.values())[0];
+      const entityPosition = getComponentValueStrict(LocalPosition, entityIndex);
+      const direction = offsetToDirection[
+        JSON.stringify(subtractCoords(cursorPosition, entityPosition))
+        ];
+      if (direction !== undefined) {
+        createHit(world.entities[entityIndex], direction);
+      }
+    }
+  });
 
   const attemptHitTilesRemoval = (entity: EntityIndex) => {
     const potentiallyHitEntities = runQuery(
@@ -46,16 +70,7 @@ export function createHitTilesSystem(network: NetworkLayer, phaser: PhaserLayer)
     if (hitTiles) {
       hitTiles.xValues.forEach((x, index) => {
         const hitTilePosition = {x, y: hitTiles.yValues[index]};
-        const hitTileRect = objectPool.get(`${entity}HitTileRect${index}`, 'Rectangle');
-        hitTileRect.setComponent({
-          id: 'HitTileRect',
-          once: gameObject => {
-            const pixelPosition = tileCoordToPixelCoord(hitTilePosition, TILE_WIDTH, TILE_HEIGHT);
-            gameObject.setPosition(pixelPosition.x, pixelPosition.y);
-            gameObject.setSize(TILE_WIDTH, TILE_HEIGHT);
-            gameObject.setFillStyle(0xff0000, 0.4);
-          },
-        });
+        drawRect(objectPool, `${entity}HitTileRect${index}`, hitTilePosition, 0xff0000);
 
         // If there are no potentially hit entities after 3 seconds, remove hit rects
         setTimeout(() => attemptHitTilesRemoval(entity), 3000);
