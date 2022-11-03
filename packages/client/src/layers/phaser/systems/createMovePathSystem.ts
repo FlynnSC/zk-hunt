@@ -9,7 +9,7 @@ import {
   setComponent,
   updateComponent
 } from '@latticexyz/recs';
-import {getSelectedEntity} from '../components/SelectedEntityComponent';
+import {getSelectedEntity} from '../components/SelectedComponent';
 import {ComponentValueFromComponent, lastElementOf, normalizedDiff} from '../../../utils/misc';
 import {getGodIndexStrict} from '../../../utils/entity';
 import {getMapTileMerkleData, getMapTileValue, getParsedMapDataFromComponent} from '../../../utils/mapData';
@@ -29,7 +29,7 @@ export function createMovePathSystem(network: NetworkLayer, phaser: PhaserLayer)
   const {
     scenes: {Main: {input, objectPool}},
     components: {
-      CursorTilePosition, SelectedEntity, PotentialMovePath, MovePath, PendingMovePosition,
+      CursorTilePosition, Selected, PotentialMovePath, MovePath, PendingMovePosition,
       LocalPosition, Nonce, ActionSourcePosition
     },
   } = phaser;
@@ -65,25 +65,24 @@ export function createMovePathSystem(network: NetworkLayer, phaser: PhaserLayer)
 
   // Update potential move path when cursor moves
   defineComponentSystem(world, CursorTilePosition, () => {
-    const selectedEntity = getSelectedEntity(SelectedEntity);
+    const selectedEntity = getSelectedEntity(Selected);
     if (selectedEntity !== undefined) {
       updatePotentialMovePath(selectedEntity);
     }
   });
 
   // Updates the potential move path when selecting/deselecting an entity
-  defineComponentSystem(world, SelectedEntity, ({value}) => {
-    const selectedEntity = value[0]?.value as EntityIndex;
-    if (selectedEntity !== undefined) {
-      updatePotentialMovePath(selectedEntity);
+  defineComponentSystem(world, Selected, ({entity, value}) => {
+    if (value[0]) {
+      updatePotentialMovePath(entity);
     } else {
-      removeComponent(PotentialMovePath, value[1]?.value as EntityIndex);
+      removeComponent(PotentialMovePath, entity);
     }
   });
 
   // Updates traverseXFirst for the potential move path when pressing R
   input.onKeyPress(keys => keys.has('R'), () => {
-    const selectedEntity = getSelectedEntity(SelectedEntity);
+    const selectedEntity = getSelectedEntity(Selected);
     if (selectedEntity !== undefined) {
       updatePotentialMovePath(selectedEntity, true);
     }
@@ -91,7 +90,7 @@ export function createMovePathSystem(network: NetworkLayer, phaser: PhaserLayer)
 
   // Handles confirmation of the potential path
   input.click$.subscribe(() => {
-    const selectedEntity = getSelectedEntity(SelectedEntity);
+    const selectedEntity = getSelectedEntity(Selected);
     if (selectedEntity !== undefined) {
       const currPath = getComponentValue(MovePath, selectedEntity);
       const newPathSegment = getComponentValueStrict(PotentialMovePath, selectedEntity);
@@ -245,7 +244,7 @@ export function createMovePathSystem(network: NetworkLayer, phaser: PhaserLayer)
       });
     }
 
-    if (getSelectedEntity(SelectedEntity) === entity) {
+    if (getSelectedEntity(Selected) === entity) {
       updatePotentialMovePath(entity);
     }
   });

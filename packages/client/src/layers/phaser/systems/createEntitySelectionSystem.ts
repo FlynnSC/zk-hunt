@@ -3,17 +3,17 @@ import {PhaserLayer} from '../types';
 import {pixelCoordToTileCoord} from '@latticexyz/phaserx';
 import {
   defineComponentSystem,
-  EntityIndex,
   getComponentValue,
   getComponentValueStrict,
   Has,
+  hasComponent,
   HasValue,
   runQuery,
   setComponent
 } from '@latticexyz/recs';
 import {TILE_HEIGHT, TILE_WIDTH} from '../constants';
 import {coordsEq, isPositionWithinMapBounds} from '../../../utils/coords';
-import {deselectEntity, getSelectedEntity, selectEntity} from '../components/SelectedEntityComponent';
+import {deselectEntity, getSelectedEntity, selectEntity} from '../components/SelectedComponent';
 import {getIndexFromSet} from '../../../utils/misc';
 import {getGodIndex, getGodIndexStrict} from '../../../utils/entity';
 import {drawRect} from '../../../utils/drawing';
@@ -23,7 +23,7 @@ export function createEntitySelectionSystem(network: NetworkLayer, phaser: Phase
     scenes: {Main: {input, objectPool}},
     world,
     components: {
-      LocalPosition, LocallyControlled, SelectedEntity, CursorTilePosition,
+      LocalPosition, LocallyControlled, Selected, CursorTilePosition,
     }
   } = phaser;
 
@@ -62,15 +62,15 @@ export function createEntitySelectionSystem(network: NetworkLayer, phaser: Phase
 
       if (clickedEntities.size > 0) {
         const entityIndex = Array.from(clickedEntities.values())[0];
-        selectEntity(SelectedEntity, entityIndex);
+        selectEntity(Selected, entityIndex);
       }
     }
   });
 
   // Handles entity deselection with right click
   input.rightClick$.subscribe(() => {
-    if (getSelectedEntity(SelectedEntity)) {
-      deselectEntity(SelectedEntity);
+    if (getSelectedEntity(Selected)) {
+      deselectEntity(Selected);
     }
   });
 
@@ -81,30 +81,29 @@ export function createEntitySelectionSystem(network: NetworkLayer, phaser: Phase
       const selectionIndex = e.keyCode - 49;
       const locallyControlledEntities = runQuery([Has(LocallyControlled)]);
       if (selectionIndex < locallyControlledEntities.size) {
-        selectEntity(SelectedEntity, getIndexFromSet(locallyControlledEntities, selectionIndex));
+        selectEntity(Selected, getIndexFromSet(locallyControlledEntities, selectionIndex));
       } else {
-        deselectEntity(SelectedEntity);
+        deselectEntity(Selected);
       }
     }
   });
 
   // Renders the selected entity rect
-  const selectedEntityRectId = 'SelectedEntityRect';
-  defineComponentSystem(world, SelectedEntity, ({value}) => {
-    const entity = value[0]?.value as EntityIndex;
-    if (entity) {
+  defineComponentSystem(world, Selected, ({entity, value}) => {
+    const rectId = `SelectedEntityRect-${entity}`;
+    if (value) {
       const entityPosition = getComponentValueStrict(LocalPosition, entity);
-      drawRect(objectPool, selectedEntityRectId, entityPosition, 0x0000ff);
+      drawRect(objectPool, rectId, entityPosition, 0x0000ff);
     } else {
-      objectPool.remove(selectedEntityRectId);
+      objectPool.remove(rectId);
     }
   });
 
   // Handles updating the position of the selected entity rect when the entity moves
   defineComponentSystem(world, LocalPosition, ({entity}) => {
-    if (getComponentValue(SelectedEntity, getGodIndexStrict(world))?.value === entity) {
+    if (hasComponent(Selected, entity)) {
       const entityPosition = getComponentValueStrict(LocalPosition, entity);
-      drawRect(objectPool, selectedEntityRectId, entityPosition, 0x0000ff);
+      drawRect(objectPool, `SelectedEntityRect-${entity}`, entityPosition, 0x0000ff);
     }
   });
 }

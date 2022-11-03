@@ -13,7 +13,7 @@ import {createHitSystem} from './systems/createHitSystem';
 import {createDeadSystem} from './systems/createDeadSystem';
 import {definePotentialMovePathComponent} from './components/PotentialMovePathComponent';
 import {onStateSyncComplete} from '../../utils/onStateSyncComplete';
-import {defineSelectedEntityComponent} from './components/SelectedEntityComponent';
+import {defineSelectedComponent} from './components/SelectedComponent';
 import {defineMovePathComponent} from './components/MovePathComponent';
 import {createMovePathSystem} from './systems/createMovePathSystem';
 
@@ -32,7 +32,7 @@ export async function createPhaserLayer(network: NetworkLayer) {
     LocallyControlled: defineBoolComponent(world, {id: 'LocallyControlled'}),
     PotentialMovePath: definePotentialMovePathComponent(world),
     MovePath: defineMovePathComponent(world),
-    SelectedEntity: defineSelectedEntityComponent(world),
+    Selected: defineSelectedComponent(world),
     CursorTilePosition: defineCoordComponent(world, {id: 'CursorTilePosition'}),
     PendingMovePosition: defineCoordComponent(world, {id: 'PendingMovePosition'}),
     // This will be the pending move position if the entity has one,
