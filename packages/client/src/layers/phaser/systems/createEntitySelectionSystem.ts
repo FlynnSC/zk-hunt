@@ -91,7 +91,7 @@ export function createEntitySelectionSystem(network: NetworkLayer, phaser: Phase
   // Renders the selected entity rect
   defineComponentSystem(world, Selected, ({entity, value}) => {
     const rectId = `SelectedEntityRect-${entity}`;
-    if (value) {
+    if (value[0]) {
       const entityPosition = getComponentValueStrict(LocalPosition, entity);
       drawRect(objectPool, rectId, entityPosition, 0x0000ff);
     } else {
