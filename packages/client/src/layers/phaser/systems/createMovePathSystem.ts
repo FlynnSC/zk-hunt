@@ -9,15 +9,14 @@ import {
   setComponent,
   updateComponent
 } from '@latticexyz/recs';
-import {getSelectedEntity} from '../components/SelectedComponent';
-import {ComponentValueFromComponent, lastElementOf, normalizedDiff} from '../../../utils/misc';
-import {getGodIndexStrict} from '../../../utils/entity';
+import {lastElementOf, normalizedDiff} from '../../../utils/misc';
+import {getEntityWithComponentValue, getGodIndexStrict} from '../../../utils/entity';
 import {getMapTileMerkleData, getMapTileValue, getParsedMapDataFromComponent} from '../../../utils/mapData';
 import {TileType} from '../../../constants';
 import {getRandomNonce} from '../../../utils/random';
 import {setPersistedComponent} from '../../../utils/persistedComponent';
 import {jungleEnterProver, jungleMoveProver} from '../../../utils/zkProving';
-import {drawRect} from '../../../utils/drawing';
+import {drawTileRects} from '../../../utils/drawing';
 
 export function createMovePathSystem(network: NetworkLayer, phaser: PhaserLayer) {
   const {
@@ -29,8 +28,8 @@ export function createMovePathSystem(network: NetworkLayer, phaser: PhaserLayer)
   const {
     scenes: {Main: {input, objectPool}},
     components: {
-      CursorTilePosition, Selected, PotentialMovePath, MovePath, PendingMovePosition,
-      LocalPosition, Nonce, ActionSourcePosition
+      CursorTilePosition, PotentialMovePath, MovePath, PendingMovePosition,
+      LocalPosition, Nonce, ActionSourcePosition, PrimingMove
     },
   } = phaser;
 
@@ -65,14 +64,14 @@ export function createMovePathSystem(network: NetworkLayer, phaser: PhaserLayer)
 
   // Update potential move path when cursor moves
   defineComponentSystem(world, CursorTilePosition, () => {
-    const selectedEntity = getSelectedEntity(Selected);
-    if (selectedEntity !== undefined) {
-      updatePotentialMovePath(selectedEntity);
+    const entity = getEntityWithComponentValue(PrimingMove);
+    if (entity !== undefined) {
+      updatePotentialMovePath(entity);
     }
   });
 
-  // Updates the potential move path when selecting/deselecting an entity
-  defineComponentSystem(world, Selected, ({entity, value}) => {
+  // Updates the potential move path when PrimingMove changes
+  defineComponentSystem(world, PrimingMove, ({entity, value}) => {
     if (value[0]) {
       updatePotentialMovePath(entity);
     } else {
@@ -82,18 +81,25 @@ export function createMovePathSystem(network: NetworkLayer, phaser: PhaserLayer)
 
   // Updates traverseXFirst for the potential move path when pressing R
   input.onKeyPress(keys => keys.has('R'), () => {
-    const selectedEntity = getSelectedEntity(Selected);
-    if (selectedEntity !== undefined) {
-      updatePotentialMovePath(selectedEntity, true);
+    const entity = getEntityWithComponentValue(PrimingMove);
+    if (entity !== undefined) {
+      updatePotentialMovePath(entity, true);
+    }
+  });
+
+  // Updates the potential move path when the ActionSourcePosition changes
+  defineComponentSystem(world, ActionSourcePosition, ({entity}) => {
+    if (getComponentValue(PrimingMove, entity)) {
+      updatePotentialMovePath(entity);
     }
   });
 
   // Handles confirmation of the potential path
   input.click$.subscribe(() => {
-    const selectedEntity = getSelectedEntity(Selected);
-    if (selectedEntity !== undefined) {
-      const currPath = getComponentValue(MovePath, selectedEntity);
-      const newPathSegment = getComponentValueStrict(PotentialMovePath, selectedEntity);
+    const entity = getEntityWithComponentValue(PrimingMove);
+    if (entity !== undefined) {
+      const currPath = getComponentValue(MovePath, entity);
+      const newPathSegment = getComponentValueStrict(PotentialMovePath, entity);
 
       if (newPathSegment.xValues.length > 0) {
         let xValues: number[];
@@ -128,7 +134,7 @@ export function createMovePathSystem(network: NetworkLayer, phaser: PhaserLayer)
         } else {
           // Includes the pending move position in the resulting path when creating a new path while
           // an old one already exists, otherwise a gap is created
-          const pendingMovePosition = getComponentValue(PendingMovePosition, selectedEntity);
+          const pendingMovePosition = getComponentValue(PendingMovePosition, entity);
           if (pendingMovePosition) {
             xValues = [pendingMovePosition.x, ...newPathSegment.xValues];
             yValues = [pendingMovePosition.y, ...newPathSegment.yValues];
@@ -138,38 +144,17 @@ export function createMovePathSystem(network: NetworkLayer, phaser: PhaserLayer)
           }
         }
 
-        setComponent(MovePath, selectedEntity, {xValues, yValues});
-        updateComponent(PotentialMovePath, selectedEntity, {continueFromPath: true});
-        updatePotentialMovePath(selectedEntity);
+        setComponent(MovePath, entity, {xValues, yValues});
+        updateComponent(
+          PotentialMovePath, entity, {xValues: [], yValues: [], continueFromPath: true}
+        );
       }
     }
   });
 
-  // TODO maybe make this a more generic system for drawing any collection of rects???
-  type PathType = ComponentValueFromComponent<typeof MovePath>;
-  const drawTileRects = (
-    entity: EntityIndex, id: string, currPath: PathType | undefined, prevPath: PathType | undefined,
-    fillColor: number, fillAlpha = 0.4
-  ) => {
-    if (currPath) {
-      currPath.xValues.forEach((x, index) => {
-        const position = {x, y: currPath.yValues[index]};
-        drawRect(objectPool, `${id}-${entity}-${index}`, position, fillColor, fillAlpha);
-      });
-    }
-
-    // Deletes any rects if needed
-    const prevCount = prevPath?.xValues?.length ?? 0;
-    const currCount = currPath?.xValues?.length ?? 0;
-    for (let index = currCount; index < prevCount; ++index) {
-      objectPool.remove(`${id}-${entity}-${index}`);
-    }
-  };
-
   // Handles drawing and removal of potential move path rects
   defineComponentSystem(world, PotentialMovePath, ({entity, value}) => {
-    const [currPotentialMovePath, prevPotentialMovePath] = value;
-    drawTileRects(entity, 'PotentialMovePathRect', currPotentialMovePath, prevPotentialMovePath, 0x0000ff, 0.2);
+    drawTileRects(objectPool, entity, 'PotentialMovePathRect', value[0], value[1], 0x0000ff, 0.2);
   });
 
   // Makes a move if possible
@@ -219,7 +204,7 @@ export function createMovePathSystem(network: NetworkLayer, phaser: PhaserLayer)
   // Handles attempting moves if the path changes, and drawing and removal of move path rects
   defineComponentSystem(world, MovePath, ({entity, value}) => {
     const [currMovePath, prevMovePath] = value;
-    drawTileRects(entity, 'MovePathRect', currMovePath, prevMovePath, 0x0000ff);
+    drawTileRects(objectPool, entity, 'MovePathRect', currMovePath, prevMovePath, 0x0000ff);
     attemptMove(entity);
   });
 
@@ -230,8 +215,8 @@ export function createMovePathSystem(network: NetworkLayer, phaser: PhaserLayer)
     setComponent(ActionSourcePosition, entity, pendingMovePosition ?? entityPosition);
   });
 
-  // Handles updating the movePath and (indirectly) submitting the next move when a move transaction is
-  // confirmed, and updates the potential move path to match the new entity position
+  // Handles updating the movePath and (indirectly) submitting the next move when a move transaction
+  // is confirmed, and updates the potential move path to match the new entity position
   defineComponentSystem(world, LocalPosition, ({entity}) => {
     removeComponent(PendingMovePosition, entity);
 
@@ -242,10 +227,6 @@ export function createMovePathSystem(network: NetworkLayer, phaser: PhaserLayer)
         xValues: movePath.xValues.slice(1),
         yValues: movePath.yValues.slice(1),
       });
-    }
-
-    if (getSelectedEntity(Selected) === entity) {
-      updatePotentialMovePath(entity);
     }
   });
 }

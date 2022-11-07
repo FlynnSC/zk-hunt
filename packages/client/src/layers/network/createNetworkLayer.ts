@@ -17,6 +17,7 @@ import {BigNumberish} from 'ethers';
 import {defineMapDataComponent} from './components/MapDataComponent';
 import {defineHitTilesComponent} from './components/HitTilesComponent';
 import {Direction} from '../../constants';
+import {defineStringArrayComponent} from '../../utils/components';
 
 /**
  * The Network layer is the lowest layer in the client architecture.
@@ -52,9 +53,9 @@ export async function createNetworkLayer(config: GameConfig) {
       metadata: {contractId: 'zkhunt.component.JungleMoveCount'}
     }),
     HitTiles: defineHitTilesComponent(world),
-    PotentialHit: defineStringComponent(world, {
-      id: 'PotentialHit',
-      metadata: {contractId: 'zkhunt.component.PotentialHit'}
+    PotentialHits: defineStringArrayComponent(world, {
+      id: 'PotentialHits',
+      metadata: {contractId: 'zkhunt.component.PotentialHits'},
     }),
     Dead: defineBoolComponent(world, {
       id: 'Dead',
@@ -90,16 +91,16 @@ export async function createNetworkLayer(config: GameConfig) {
     systems['zkhunt.system.JungleExit'].executeTyped(entity, oldPosition, oldPositionNonce, newPosition);
   }
 
-  function createHit(entity: EntityID, direction: Direction) {
-    systems['zkhunt.system.HitCreation'].executeTyped(entity, direction);
+  function createHit(entity: EntityID, hitTilesEntity: EntityID, direction: Direction) {
+    systems['zkhunt.system.HitCreation'].executeTyped(entity, hitTilesEntity, direction);
   }
 
-  function jungleHitAvoid(entity: EntityID, proofData: string[]) {
-    systems['zkhunt.system.JungleHitAvoid'].executeTyped(entity, proofData);
+  function jungleHitAvoid(entity: EntityID, hitTilesEntity: EntityID, proofData: string[]) {
+    systems['zkhunt.system.JungleHitAvoid'].executeTyped(entity, hitTilesEntity, proofData);
   }
 
-  function jungleHitReceive(entity: EntityID, position: Coord, nonce: number) {
-    systems['zkhunt.system.JungleHitReceive'].executeTyped(entity, position, nonce);
+  function jungleHitReceive(entity: EntityID, hitTilesEntity: EntityID, position: Coord, nonce: number) {
+    systems['zkhunt.system.JungleHitReceive'].executeTyped(entity, hitTilesEntity, position, nonce);
   }
 
   // --- CONTEXT --------------------------------------------------------------------

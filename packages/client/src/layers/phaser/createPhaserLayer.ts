@@ -4,7 +4,6 @@ import {phaserConfig} from './config';
 import {NetworkLayer} from '../network';
 import {createEntitySelectionSystem} from './systems/createEntitySelectionSystem';
 import {defineBoolComponent, defineCoordComponent, defineNumberComponent} from '@latticexyz/std-client';
-import {definePotentialPositionsComponent} from './components/PotentialPositionsComponent';
 import {createLocalPositionSystem} from './systems/createLocalPositionSystem';
 import {createJungleMovementSystem} from './systems/createJungleMovementSystem';
 import {restorePersistedComponents} from '../../utils/persistedComponent';
@@ -14,8 +13,8 @@ import {createDeadSystem} from './systems/createDeadSystem';
 import {definePotentialMovePathComponent} from './components/PotentialMovePathComponent';
 import {onStateSyncComplete} from '../../utils/onStateSyncComplete';
 import {defineSelectedComponent} from './components/SelectedComponent';
-import {defineMovePathComponent} from './components/MovePathComponent';
 import {createMovePathSystem} from './systems/createMovePathSystem';
+import {defineCoordArrayComponent, defineStringArrayComponent} from '../../utils/components';
 
 /**
  * The Phaser layer is responsible for rendering game objects to the screen.
@@ -27,17 +26,26 @@ export async function createPhaserLayer(network: NetworkLayer) {
   // --- COMPONENTS -----------------------------------------------------------------
   const components = {
     LocalPosition: defineCoordComponent(world, {id: 'LocalPosition'}),
-    PotentialPositions: definePotentialPositionsComponent(world),
+    PotentialPositions: defineCoordArrayComponent(world, {id: 'PotentialPositions'}),
     Nonce: defineNumberComponent(world, {id: 'Nonce'}),
     LocallyControlled: defineBoolComponent(world, {id: 'LocallyControlled'}),
     PotentialMovePath: definePotentialMovePathComponent(world),
-    MovePath: defineMovePathComponent(world),
+    MovePath: defineCoordArrayComponent(world, {id: 'MovePath'}),
     Selected: defineSelectedComponent(world),
     CursorTilePosition: defineCoordComponent(world, {id: 'CursorTilePosition'}),
     PendingMovePosition: defineCoordComponent(world, {id: 'PendingMovePosition'}),
     // This will be the pending move position if the entity has one,
     // otherwise it will be the local position
     ActionSourcePosition: defineCoordComponent(world, {id: 'ActionSourcePosition'}),
+    PrimingMove: defineBoolComponent(world, {id: 'PrimingMove'}),
+    PrimingAttack: defineBoolComponent(world, {id: 'PrimingAttack'}),
+    PotentialHitTiles: defineCoordArrayComponent(world, {id: 'PotentialHitTiles'}),
+    PendingHitTiles: defineCoordArrayComponent(world, {id: 'PendingHitTiles'}),
+    ResolvedHitTiles: defineCoordArrayComponent(world, {id: 'ResolvedHitTiles'}),
+    PotentialHitsPendingResolution: defineStringArrayComponent(
+      world,
+      {id: 'PotentialHitsPendingResolution'}
+    ),
   };
 
   onStateSyncComplete(network, () => restorePersistedComponents(components));

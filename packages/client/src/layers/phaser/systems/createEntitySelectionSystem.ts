@@ -1,15 +1,19 @@
 import {NetworkLayer} from '../../network';
 import {PhaserLayer} from '../types';
-import {pixelCoordToTileCoord} from '@latticexyz/phaserx';
+import {Key, pixelCoordToTileCoord} from '@latticexyz/phaserx';
 import {
+  Component,
   defineComponentSystem,
+  EntityIndex,
   getComponentValue,
   getComponentValueStrict,
   Has,
   hasComponent,
   HasValue,
+  removeComponent,
   runQuery,
-  setComponent
+  setComponent,
+  Type
 } from '@latticexyz/recs';
 import {TILE_HEIGHT, TILE_WIDTH} from '../constants';
 import {coordsEq, isPositionWithinMapBounds} from '../../../utils/coords';
@@ -23,7 +27,7 @@ export function createEntitySelectionSystem(network: NetworkLayer, phaser: Phase
     scenes: {Main: {input, objectPool}},
     world,
     components: {
-      LocalPosition, LocallyControlled, Selected, CursorTilePosition,
+      LocalPosition, LocallyControlled, Selected, CursorTilePosition, PrimingMove, PrimingAttack
     }
   } = phaser;
 
@@ -69,9 +73,7 @@ export function createEntitySelectionSystem(network: NetworkLayer, phaser: Phase
 
   // Handles entity deselection with right click
   input.rightClick$.subscribe(() => {
-    if (getSelectedEntity(Selected)) {
-      deselectEntity(Selected);
-    }
+    deselectEntity(Selected);
   });
 
   // Handles entity selection with the num keys
@@ -88,22 +90,65 @@ export function createEntitySelectionSystem(network: NetworkLayer, phaser: Phase
     }
   });
 
-  // Renders the selected entity rect
+  const drawSelectedEntityRect = (entity: EntityIndex) => {
+    const entityPosition = getComponentValueStrict(LocalPosition, entity);
+    drawRect(objectPool, `SelectedEntityRect-${entity}`, entityPosition, 0x0088ff);
+  };
+
+  // Handles rendering and removal of the selected entity rect
   defineComponentSystem(world, Selected, ({entity, value}) => {
-    const rectId = `SelectedEntityRect-${entity}`;
     if (value[0]) {
-      const entityPosition = getComponentValueStrict(LocalPosition, entity);
-      drawRect(objectPool, rectId, entityPosition, 0x0000ff);
+      drawSelectedEntityRect(entity);
     } else {
-      objectPool.remove(rectId);
+      objectPool.remove(`SelectedEntityRect-${entity}`);
     }
   });
 
   // Handles updating the position of the selected entity rect when the entity moves
   defineComponentSystem(world, LocalPosition, ({entity}) => {
     if (hasComponent(Selected, entity)) {
-      const entityPosition = getComponentValueStrict(LocalPosition, entity);
-      drawRect(objectPool, `SelectedEntityRect-${entity}`, entityPosition, 0x0000ff);
+      drawSelectedEntityRect(entity);
+    }
+  });
+
+  const keyCodeToComponent: Record<string, Component<{value: Type.Boolean}>> = {
+    69: PrimingMove, // E
+    87: PrimingAttack, // W
+  };
+
+
+  // Handles updating the PrimingX components when the respective buttons are pressed/released
+  input.keyboard$.subscribe(e => {
+    const selectedEntity = getSelectedEntity(Selected);
+    const component = keyCodeToComponent[e.keyCode];
+    if (selectedEntity && component) {
+      if (e.isDown) {
+        // Only update the component on the initial press (not repeatedly when held down)
+        if (e.repeats === 1) {
+          setComponent(component, selectedEntity, {value: true});
+        }
+      } else {
+        removeComponent(component, selectedEntity);
+      }
+    }
+  });
+
+  const keyCodeToKey: Record<string, string> = {
+    69: 'E',
+    87: 'W',
+  };
+
+  // Handles updating the PrimingX components when the selected entity changes
+  defineComponentSystem(world, Selected, ({entity, value}) => {
+    if (value[0]) {
+      // If keys are held down when switching different entities, set the relevant components
+      Object.entries(keyCodeToComponent).forEach(([keyCode, component]) => {
+        if (input.pressedKeys.has(keyCodeToKey[keyCode] as Key)) {
+          setComponent(component, entity, {value: true});
+        }
+      });
+    } else {
+      Object.values(keyCodeToComponent).forEach(component => removeComponent(component, entity));
     }
   });
 }

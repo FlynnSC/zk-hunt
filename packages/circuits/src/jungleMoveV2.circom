@@ -34,7 +34,7 @@ template EnsureIsBit() {
     in * (in - 1) === 0;
 }
 
-// TODO update comments
+// TODO renmane this to jungleMove and get rid of old one, and update comments
 // Checks that move is valid (single cell orthogonal onto a jungle tile), and outputs
 // the old and new commitments so that they can be checked for validity
 //

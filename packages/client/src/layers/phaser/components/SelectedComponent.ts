@@ -1,6 +1,6 @@
-import {EntityIndex, Has, removeComponent, runQuery, setComponent, World} from '@latticexyz/recs';
+import {EntityIndex, removeComponent, setComponent, World} from '@latticexyz/recs';
 import {defineBoolComponent} from '@latticexyz/std-client';
-import {getIndexFromSet} from '../../../utils/misc';
+import {getEntityWithComponentValue} from '../../../utils/entity';
 
 export function defineSelectedComponent(world: World) {
   return defineBoolComponent(world, {id: 'Selected'});
@@ -9,7 +9,7 @@ export function defineSelectedComponent(world: World) {
 type SelectedComponentType = ReturnType<typeof defineSelectedComponent>;
 
 export function getSelectedEntity(selectedComponent: SelectedComponentType) {
-  return getIndexFromSet(runQuery([Has(selectedComponent)]), 0);
+  return getEntityWithComponentValue(selectedComponent);
 }
 
 export function selectEntity(

@@ -6,7 +6,7 @@ import {TileType} from "../components/MapDataComponent.sol";
 import {getAddressById, getSystemAddressById} from "solecs/utils.sol";
 import {HitTilesComponent, ID as HitTilesComponentID, HitTileSet} from "../components/HitTilesComponent.sol";
 import {PositionComponent, ID as PositionComponentID, Position} from "../components/PositionComponent.sol";
-import {PotentialHitComponent, ID as PotentialHitComponentID} from "../components/PotentialHitComponent.sol";
+import {PotentialHitsComponent, ID as PotentialHitsComponentID} from "../components/PotentialHitsComponent.sol";
 import {PositionCommitmentComponent, ID as PositionCommitmentComponentID} from "../components/PositionCommitmentComponent.sol";
 import {KillSystem, ID as KillSystemID} from "./KillSystem.sol";
 import {PoseidonSystem, ID as PoseidonSystemID} from "./PoseidonSystem.sol";
@@ -19,7 +19,7 @@ contract JungleHitReceiveSystem is System {
   PositionCommitmentComponent positionCommitmentComponent;
   KillSystem killSystem;
   PoseidonSystem poseidonSystem;
-  PotentialHitComponent potentialHitComponent;
+  PotentialHitsComponent potentialHitsComponent;
 
   constructor(IWorld _world, address _components) System(_world, _components) {
     hitTilesComponent = HitTilesComponent(getAddressById(components, HitTilesComponentID));
@@ -31,17 +31,18 @@ contract JungleHitReceiveSystem is System {
     poseidonSystem = PoseidonSystem(
       getSystemAddressById(components, PoseidonSystemID)
     );
-    potentialHitComponent = PotentialHitComponent(getAddressById(components, PotentialHitComponentID));
+    potentialHitsComponent = PotentialHitsComponent(getAddressById(components, PotentialHitsComponentID));
   }
 
   function execute(bytes memory arguments) public returns (bytes memory) {
-    (uint256 entity, Position memory position, uint256 nonce) = 
-      abi.decode(arguments, (uint256, Position, uint256));
-    executeTyped(entity, position, nonce);
+    (uint256 entity, uint256 hitTilesEntity, Position memory position, uint256 nonce) = 
+      abi.decode(arguments, (uint256, uint256, Position, uint256));
+    executeTyped(entity, hitTilesEntity, position, nonce);
   }
 
   function executeTyped(
     uint256 entity, 
+    uint256 hitTilesEntity,
     Position memory position,
     uint256 nonce
   ) public returns (bytes memory) {
@@ -52,7 +53,6 @@ contract JungleHitReceiveSystem is System {
     );
 
     // Checks that the revealed position was actually contained within the hit tiles
-    uint256 hitTilesEntity = potentialHitComponent.getValue(entity);
     HitTileSet memory hitTileSet = hitTilesComponent.getValue(hitTilesEntity);
     bool wasHit = false;
     for (uint256 i = 0; i < 4; ++i) {
@@ -65,9 +65,5 @@ contract JungleHitReceiveSystem is System {
 
     positionComponent.set(entity, position);
     killSystem.executeTyped(entity);
-
-    // TODO probably remove this? Isn't needed? 
-    // (If removing, also remove write access from deploy.json)
-    potentialHitComponent.remove(entity); 
   }
 }

@@ -9,12 +9,12 @@ import {
   runQuery,
   setComponent
 } from '@latticexyz/recs';
-import {MAP_SIZE, TileType} from '../../../constants';
+import {TileType} from '../../../constants';
 import {getMapTileValue, getParsedMapDataFromComponent} from '../../../utils/mapData';
 import {Coord} from '@latticexyz/utils';
 import {Tileset} from '../assets/tilesets/overworldTileset';
 import {setPersistedComponent} from '../../../utils/persistedComponent';
-import {calcPositionIndex} from '../../../utils/coords';
+import {indexToPosition, positionToIndex} from '../../../utils/coords';
 
 export function createJungleMovementSystem(network: NetworkLayer, phaser: PhaserLayer) {
   const {
@@ -31,7 +31,7 @@ export function createJungleMovementSystem(network: NetworkLayer, phaser: Phaser
   // player, and updates the potential player positions for external players. Also removes the
   // potential player positions display when a player exits the jungle
   defineComponentSystem(world, JungleMoveCount, ({entity, value}) => {
-    const moveCount = Number(value[0]?.value);
+    const moveCount = Number(value[0]?.value ?? 0);
 
     // If the entity is owned by the local player, update its local position, otherwise update the
     // potential positions
@@ -44,8 +44,7 @@ export function createJungleMovementSystem(network: NetworkLayer, phaser: Phaser
         );
       }
     } else {
-      // The commitment will be set to zero when exiting the jungle, so remove potential player
-      // positions
+      // Remove potential player positions when exiting the jungle
       if (moveCount === 0) {
         removeComponent(PotentialPositions, entity);
       } else {
@@ -54,7 +53,7 @@ export function createJungleMovementSystem(network: NetworkLayer, phaser: Phaser
         const potentialPositions = [startingPosition];
         let currEdgePositions = [startingPosition];
         let newEdgePositions: Coord[] = [];
-        const seenPositionIndices = new Set([calcPositionIndex(startingPosition)]);
+        const seenPositionIndices = new Set([positionToIndex(startingPosition)]);
         const parsedMapData = getParsedMapDataFromComponent(MapData);
         const checkOffsets = [[-1, 0], [1, 0], [0, -1], [0, 1]];
         for (let step = 1; step < moveCount; ++step) {
@@ -62,7 +61,7 @@ export function createJungleMovementSystem(network: NetworkLayer, phaser: Phaser
             checkOffsets.map(
               ([offsetX, offsetY]) => ({x: currPosition.x + offsetX, y: currPosition.y + offsetY})
             ).forEach(newPosition => {
-              const positionIndex = calcPositionIndex(newPosition);
+              const positionIndex = positionToIndex(newPosition);
               if (
                 !seenPositionIndices.has(positionIndex) &&
                 getMapTileValue(parsedMapData, newPosition) === TileType.JUNGLE
@@ -104,7 +103,7 @@ export function createJungleMovementSystem(network: NetworkLayer, phaser: Phaser
     hiddenEntities.forEach(entity => {
       const potentialPositions = getComponentValueStrict(PotentialPositions, entity);
       potentialPositions.xValues.forEach((x, index) => {
-        const positionIndex = calcPositionIndex({x, y: potentialPositions.yValues[index]});
+        const positionIndex = positionToIndex({x, y: potentialPositions.yValues[index]});
         const previousCount = tileCounts.get(positionIndex) || 0;
         tileCounts.set(positionIndex, previousCount + 1);
       });
@@ -112,8 +111,7 @@ export function createJungleMovementSystem(network: NetworkLayer, phaser: Phaser
 
     // Redraws the full set of potential player position indicator tiles
     tileCounts.forEach((count, positionIndex) => {
-      const position = {x: positionIndex % MAP_SIZE, y: Math.floor(positionIndex / MAP_SIZE)};
-      MainMap.putTileAt(position, Tileset.Unknown1 + count - 1, 'Overlay');
+      MainMap.putTileAt(indexToPosition(positionIndex), Tileset.Unknown1 + count - 1, 'Overlay');
     });
   });
 }

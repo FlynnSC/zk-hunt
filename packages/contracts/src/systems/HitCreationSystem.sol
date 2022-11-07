@@ -6,7 +6,7 @@ import {TileType} from "../components/MapDataComponent.sol";
 import {getAddressById, getSystemAddressById} from "solecs/utils.sol";
 import {HitTilesComponent, ID as HitTilesComponentID, HitTileSet} from "../components/HitTilesComponent.sol";
 import {PositionComponent, ID as PositionComponentID, Position} from "../components/PositionComponent.sol";
-import {PotentialHitComponent, ID as PotentialHitComponentID} from "../components/PotentialHitComponent.sol";
+import {PotentialHitsComponent, ID as PotentialHitsComponentID} from "../components/PotentialHitsComponent.sol";
 import {JungleMoveCountComponent, ID as JungleMoveCountComponentID} from "../components/JungleMoveCountComponent.sol";
 import {KillSystem, ID as KillSystemID} from "./KillSystem.sol";
 import {PoseidonSystem, ID as PoseidonSystemID} from "./PoseidonSystem.sol";
@@ -26,7 +26,7 @@ contract HitCreationSystem is System {
   JungleMoveCountComponent jungleMoveCountComponent;
   KillSystem killSystem;
   PoseidonSystem poseidonSystem;
-  PotentialHitComponent potentialHitComponent;
+  PotentialHitsComponent potentialHitsComponent;
 
   int8[2][4][4] hitTileOffsetList = [
     [[int8(1), 0], [int8(2), 0], [int8(3), 0], [int8(4), 0]],
@@ -45,12 +45,13 @@ contract HitCreationSystem is System {
     poseidonSystem = PoseidonSystem(
       getSystemAddressById(components, PoseidonSystemID)
     );
-    potentialHitComponent = PotentialHitComponent(getAddressById(components, PotentialHitComponentID));
+    potentialHitsComponent = PotentialHitsComponent(getAddressById(components, PotentialHitsComponentID));
   }
 
   function execute(bytes memory arguments) public returns (bytes memory) {
-    (uint256 entity, Direction direction) = abi.decode(arguments, (uint256, Direction));
-    executeTyped(entity, direction);
+    (uint256 entity, uint256 hitTilesEntity, Direction direction) 
+      = abi.decode(arguments, (uint256, uint256, Direction));
+    executeTyped(entity, hitTilesEntity, direction);
   }
 
   // TODO potentially make it so that the attacker specifies which hidden
@@ -58,8 +59,10 @@ contract HitCreationSystem is System {
   // integrity if they fail to specify an entity that they would have hit?)
 
   // TODO think about the consequences of a player creating hit tiles that are outside
-  // of the map 
-  function executeTyped(uint256 entity, Direction direction) public returns (bytes memory) {
+  // of the map
+
+  // The hitTilesEntity Id is created on the client
+  function executeTyped(uint256 entity, uint256 hitTilesEntity, Direction direction) public returns (bytes memory) {
     Position memory entityPosition = positionComponent.getValue(entity);
     int8[2][4] memory hitTileOffsets = hitTileOffsetList[uint8(direction)];
     uint8[] memory hitTilesXValues = new uint8[](4);
@@ -75,13 +78,19 @@ contract HitCreationSystem is System {
       );
       for (uint256 j = 0; j < potentiallyHitEntities.length; ++j) {
         // If not in the jungle, kill entity
-        if (!jungleMoveCountComponent.isEntityInJungle(potentiallyHitEntities[j])) {
+        if (!jungleMoveCountComponent.has(potentiallyHitEntities[j])) {
           killSystem.executeTyped(potentiallyHitEntities[j]);
         }
       }
     }
 
-    uint256 hitTilesEntity = world.getUniqueEntityId(); 
+    // Potential hits added first so that the client knows whether all the hit tiles have resolved 
+    // instantly or not
+    uint256[] memory entitiesInJungle = jungleMoveCountComponent.getEntities();
+    for (uint256 i = 0; i < entitiesInJungle.length; ++i) {
+      potentialHitsComponent.addPotentialHit(entitiesInJungle[i], hitTilesEntity);
+    }
+
     hitTilesComponent.set(hitTilesEntity, HitTileSet({
       xValues: hitTilesXValues,
       yValues: hitTilesYValues,
@@ -94,10 +103,5 @@ contract HitCreationSystem is System {
         )
       )
     }));
-
-    uint256[] memory entitiesInJungle = jungleMoveCountComponent.getEntitiesInJungle();
-    for (uint256 i = 0; i < entitiesInJungle.length; ++i) {
-      potentialHitComponent.set(entitiesInJungle[i], hitTilesEntity);
-    }
   }
 }

@@ -15,3 +15,7 @@ export function lastElementOf<T>(arr: T[]) {
 
 export type ComponentValueFromComponent<Comp> =
   Comp extends Component<infer S> ? ComponentValue<S> : never;
+
+export function intDiv(val: number, div: number) {
+  return Math.floor(val / div);
+}

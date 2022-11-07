@@ -3,6 +3,7 @@ import {BITS_PER_CHUNK, MAP_SIZE, TileType} from '../constants';
 import {getComponentValueStrict} from '@latticexyz/recs';
 import {defineMapDataComponent} from '../layers/network/components/MapDataComponent';
 import {getGodIndexStrict} from './entity';
+import {intDiv} from './misc';
 
 const ONE = BigInt(1);
 
@@ -33,10 +34,6 @@ export function getParsedMapDataFromComponent(
 
 export function getMapTileValue(parsedMapData: ParsedMapData, position: Coord) {
   return Number((parsedMapData.map >> BigInt(calcTileIndex(position))) & ONE) as TileType;
-}
-
-function intDiv(val: number, div: number) {
-  return Math.floor(val / div);
 }
 
 export function getMapTileMerkleData(parsedMapData: ParsedMapData, position: Coord) {

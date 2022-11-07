@@ -4,6 +4,7 @@ import {defineComponentSystem} from '@latticexyz/recs';
 import {MAP_SIZE} from '../../../constants';
 import {Tileset} from '../assets/tilesets/overworldTileset';
 import {getParsedMapDataFromComponent} from '../../../utils/mapData';
+import {indexToPosition} from '../../../utils/coords';
 
 const ONE = BigInt(1);
 
@@ -26,12 +27,11 @@ export function createMapDataSystem(network: NetworkLayer, phaser: PhaserLayer) 
   defineComponentSystem(world, MapData, () => {
     const parsedMapData = getParsedMapDataFromComponent(MapData);
     for (let i = 0; i < MAP_SIZE * MAP_SIZE; ++i) {
-      const x = i % MAP_SIZE;
-      const y = Math.floor(i / MAP_SIZE);
-      MainMap.putTileAt({x, y}, Tileset.Grass);
+      const position = indexToPosition(i);
+      MainMap.putTileAt(position, Tileset.Grass);
 
       if ((parsedMapData.map >> BigInt(i)) & ONE) {
-        MainMap.putTileAt({x, y}, Tileset.Tree7, 'Foreground');
+        MainMap.putTileAt(position, Tileset.Tree7, 'Foreground');
       }
     }
   });

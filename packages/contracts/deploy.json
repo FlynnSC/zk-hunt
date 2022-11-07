@@ -6,7 +6,7 @@
     "ControlledByComponent",
     "JungleMoveCountComponent",
     "HitTilesComponent",
-    "PotentialHitComponent",
+    "PotentialHitsComponent",
     "DeadComponent"
   ],
   "systems": [
@@ -39,13 +39,16 @@
       "writeAccess": ["PositionComponent", "PositionCommitmentComponent", "JungleMoveCountComponent"]
     },
     {"name": "SpawnSystem", "writeAccess": ["PositionComponent", "ControlledByComponent"]},
-    {"name": "KillSystem", "writeAccess": ["DeadComponent"]},
-    {"name": "HitCreationSystem", "writeAccess": ["HitTilesComponent", "PotentialHitComponent"]},
+    {
+      "name": "KillSystem",
+      "writeAccess": ["DeadComponent", "PotentialHitsComponent", "JungleMoveCountComponent"]
+    },
+    {"name": "HitCreationSystem", "writeAccess": ["HitTilesComponent", "PotentialHitsComponent"]},
     {
       "name": "JungleHitAvoidSystem",
-      "writeAccess": ["PotentialHitComponent"],
+      "writeAccess": ["PotentialHitsComponent"],
       "dependencies": ["JungleHitAvoidVerifier"]
     },
-    {"name": "JungleHitReceiveSystem", "writeAccess": ["PositionComponent", "PotentialHitComponent"]}
+    {"name": "JungleHitReceiveSystem", "writeAccess": ["PositionComponent", "PotentialHitsComponent"]}
   ]
 }

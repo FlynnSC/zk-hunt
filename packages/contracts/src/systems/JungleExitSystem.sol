@@ -51,6 +51,6 @@ contract JungleExitSystem is MoveSystem {
 
     // Set to 0 so that players can no longer call jungleMove until they enter a jungle tile again
     positionCommitmentComponent.set(entity, 0);
-    jungleMoveCountComponent.set(entity, 0);
+    jungleMoveCountComponent.remove(entity);
   }
 }
