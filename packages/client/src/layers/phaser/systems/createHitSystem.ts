@@ -12,19 +12,12 @@ import {
 } from '@latticexyz/recs';
 import {angleTowardPosition, coordsEq, positionToIndex} from '../../../utils/coords';
 import {drawTileRects} from '../../../utils/drawing';
-import {Direction} from '../../../constants';
 import {getEntityWithComponentValue, getGodIndexStrict, getUniqueEntityId} from '../../../utils/entity';
 import {getMapTileValue, getParsedMapDataFromComponent} from '../../../utils/mapData';
 import {Coord} from '@latticexyz/utils';
 import {ComponentValueFromComponent, lastElementOf} from '../../../utils/misc';
 import {jungleHitAvoidProver} from '../../../utils/zkProving';
-
-const directionToOffsets: Record<Direction, [number, number][]> = {
-  [Direction.RIGHT]: [[1, 0], [2, 0], [3, 0], [4, 0]],
-  [Direction.UP]: [[0, -1], [0, -2], [0, -3], [0, -4]],
-  [Direction.LEFT]: [[-1, 0], [-2, 0], [-3, 0], [-4, 0]],
-  [Direction.DOWN]: [[0, 1], [0, 2], [0, 3], [0, 4]],
-};
+import {spearHitTileOffsetList} from '../../../utils/hitTiles';
 
 export function createHitSystem(network: NetworkLayer, phaser: PhaserLayer) {
   const {
@@ -41,28 +34,20 @@ export function createHitSystem(network: NetworkLayer, phaser: PhaserLayer) {
     },
   } = phaser;
 
-  const getAttackDirection = (entityPosition: Coord) => {
+  const getAttackDirectionIndex = (actionSourcePosition: Coord) => {
     const cursorPosition = getComponentValue(CursorTilePosition, getGodIndexStrict(world));
     if (!cursorPosition) return undefined;
 
-    const angle = angleTowardPosition(entityPosition, cursorPosition);
-    if (angle < 45 || angle > 315) {
-      return Direction.RIGHT;
-    } else if (angle < 135) {
-      return Direction.UP;
-    } else if (angle < 225) {
-      return Direction.LEFT;
-    } else {
-      return Direction.DOWN;
-    }
+    const angle = angleTowardPosition(actionSourcePosition, cursorPosition);
+    return Math.floor(angle / 360 * spearHitTileOffsetList.length);
   };
 
   const updatePotentialHitTiles = (entity: EntityIndex) => {
     const actionSourcePosition = getComponentValueStrict(ActionSourcePosition, entity);
-    const direction = getAttackDirection(actionSourcePosition);
-    if (direction === undefined) return;
+    const directionIndex = getAttackDirectionIndex(actionSourcePosition);
+    if (directionIndex === undefined) return;
 
-    const offsets = directionToOffsets[direction];
+    const offsets = spearHitTileOffsetList[directionIndex];
     const xValues = [] as number[];
     const yValues = [] as number[];
     offsets.forEach(([xOffset, yOffset]) => {
@@ -102,19 +87,20 @@ export function createHitSystem(network: NetworkLayer, phaser: PhaserLayer) {
     drawTileRects(objectPool, entity, 'PotentialHitTileRect', value[0], value[1], 0xff8800, 0.2);
   });
 
+  // TODO prevent creating a new attack if there is already one pending?
+  
   // Handles submission of an attack, and converting potential hit tiles to pending hit tiles
   input.click$.subscribe(() => {
     const entity = getEntityWithComponentValue(PrimingAttack);
     if (!entity) return;
 
-    const entityPosition = getComponentValueStrict(LocalPosition, entity);
-    const direction = getAttackDirection(entityPosition);
+    const actionSourcePosition = getComponentValueStrict(ActionSourcePosition, entity);
+    const direction = getAttackDirectionIndex(actionSourcePosition);
     if (direction !== undefined) {
       const hitTilesEntityID = getUniqueEntityId(world);
       const hitTilesEntity = world.registerEntity({id: hitTilesEntityID});
       createHit(world.entities[entity], hitTilesEntityID, direction);
       const potentialHitTiles = getComponentValueStrict(PotentialHitTiles, entity);
-      // TODO have a better system for preventing attack aiming/submission while one is already pending
       removeComponent(PrimingAttack, entity);
       setComponent(PendingHitTiles, hitTilesEntity, potentialHitTiles);
     }
@@ -162,7 +148,7 @@ export function createHitSystem(network: NetworkLayer, phaser: PhaserLayer) {
       });
       setComponent(ResolvedHitTiles, hitTilesEntity, newResolvedHitTiles);
     }
-  }, 2000);
+  }, 1000);
 
   // Updates pending hit tiles to resolved hit tiles (if they can be resolved), when the hit tiles
   // are created in the contract

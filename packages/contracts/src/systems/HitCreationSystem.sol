@@ -10,30 +10,17 @@ import {PotentialHitsComponent, ID as PotentialHitsComponentID} from "../compone
 import {JungleMoveCountComponent, ID as JungleMoveCountComponentID} from "../components/JungleMoveCountComponent.sol";
 import {KillSystem, ID as KillSystemID} from "./KillSystem.sol";
 import {PoseidonSystem, ID as PoseidonSystemID} from "./PoseidonSystem.sol";
+import "../HitTileOffsetListDefinitions.sol";
 
 uint256 constant ID = uint256(keccak256("zkhunt.system.HitCreation"));
 
-enum Direction {
-  Right,
-  Up,
-  Left,
-  Down
-}
-
-contract HitCreationSystem is System {
+contract HitCreationSystem is System, HitTileOffsetListDefinitions {
   HitTilesComponent hitTilesComponent;
   PositionComponent positionComponent;
   JungleMoveCountComponent jungleMoveCountComponent;
   KillSystem killSystem;
   PoseidonSystem poseidonSystem;
   PotentialHitsComponent potentialHitsComponent;
-
-  int8[2][4][4] hitTileOffsetList = [
-    [[int8(1), 0], [int8(2), 0], [int8(3), 0], [int8(4), 0]],
-    [[int8(0), -1], [int8(0), -2], [int8(0), -3], [int8(0), -4]],
-    [[-1, 0], [-2, 0], [-3, 0], [-4, 0]],
-    [[int8(0), 1], [int8(0), 2], [int8(0), 3], [int8(0), 4]]
-  ]; 
 
   constructor(IWorld _world, address _components) System(_world, _components) {
     hitTilesComponent = HitTilesComponent(getAddressById(components, HitTilesComponentID));
@@ -49,9 +36,9 @@ contract HitCreationSystem is System {
   }
 
   function execute(bytes memory arguments) public returns (bytes memory) {
-    (uint256 entity, uint256 hitTilesEntity, Direction direction) 
-      = abi.decode(arguments, (uint256, uint256, Direction));
-    executeTyped(entity, hitTilesEntity, direction);
+    (uint256 entity, uint256 hitTilesEntity, uint8 directionIndex) 
+      = abi.decode(arguments, (uint256, uint256, uint8));
+    executeTyped(entity, hitTilesEntity, directionIndex);
   }
 
   // TODO potentially make it so that the attacker specifies which hidden
@@ -62,9 +49,16 @@ contract HitCreationSystem is System {
   // of the map
 
   // The hitTilesEntity Id is created on the client
-  function executeTyped(uint256 entity, uint256 hitTilesEntity, Direction direction) public returns (bytes memory) {
+  function executeTyped(
+    uint256 entity, uint256 hitTilesEntity, uint8 directionIndex
+  ) public returns (bytes memory) {
+    require(
+      directionIndex < spearHitTileOffsetList.length, 
+      "Provided directionIndex is too large"
+    );
+
     Position memory entityPosition = positionComponent.getValue(entity);
-    int8[2][4] memory hitTileOffsets = hitTileOffsetList[uint8(direction)];
+    int8[2][4] memory hitTileOffsets = spearHitTileOffsetList[uint8(directionIndex)];
     uint8[] memory hitTilesXValues = new uint8[](4);
     uint8[] memory hitTilesYValues = new uint8[](4);
 
