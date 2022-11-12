@@ -17,7 +17,8 @@ import {BigNumberish} from 'ethers';
 import {defineMapDataComponent} from './components/MapDataComponent';
 import {defineHitTilesComponent} from './components/HitTilesComponent';
 import {Direction} from '../../constants';
-import {defineStringArrayComponent} from '../../utils/components';
+import {defineCoordArrayComponent, defineStringArrayComponent} from '../../utils/components';
+import {ComponentValueFromComponent} from '../../utils/misc';
 
 /**
  * The Network layer is the lowest layer in the client architecture.
@@ -61,6 +62,10 @@ export async function createNetworkLayer(config: GameConfig) {
       id: 'Dead',
       metadata: {contractId: 'zkhunt.component.Dead'}
     }),
+    RevealedPotentialPositions: defineCoordArrayComponent(world, {
+      id: 'RevealedPotentialPositions',
+      metadata: {contractId: 'zkhunt.component.RevealedPotentialPositions'},
+    }),
   };
 
   // --- SETUP ----------------------------------------------------------------------
@@ -103,6 +108,12 @@ export async function createNetworkLayer(config: GameConfig) {
     systems['zkhunt.system.JungleHitReceive'].executeTyped(entity, hitTilesEntity, position, nonce);
   }
 
+  type PotentialPositions = ComponentValueFromComponent<typeof components.RevealedPotentialPositions>;
+
+  function revealPotentialPositions(entity: EntityID, potentialPositions: PotentialPositions, proofData: string[]) {
+    systems['zkhunt.system.RevealPotentialPositions'].executeTyped(entity, potentialPositions, proofData);
+  }
+
   // --- CONTEXT --------------------------------------------------------------------
   const context = {
     world,
@@ -113,7 +124,10 @@ export async function createNetworkLayer(config: GameConfig) {
     startSync,
     network,
     actions,
-    api: {spawn, plainsMove, jungleEnter, jungleMove, jungleExit, createHit, jungleHitAvoid, jungleHitReceive},
+    api: {
+      spawn, plainsMove, jungleEnter, jungleMove, jungleExit, createHit, jungleHitAvoid,
+      jungleHitReceive, revealPotentialPositions
+    },
     dev: setupDevSystems(world, encoders, systems),
   };
 

@@ -53,9 +53,22 @@ export const jungleMoveProver = createProver<JungleMoveProofInput>('jungleMoveV2
 type JungleHitAvoidProofInput = {
   x: number;
   y: number;
+  nonce: number;
+  positionCommitment: BigNumberish;
 
   hitTilesXValues: number[];
   hitTilesYValues: number[];
-  hitTilesMerkleRoot: BigNumberish;
 };
 export const jungleHitAvoidProver = createProver<JungleHitAvoidProofInput>('jungleHitAvoid');
+
+type PotentialPositionsRevealProofInput = {
+  x: number;
+  y: number;
+  nonce: number;
+  positionCommitment: BigNumberish;
+
+  potentialPositionsXValues: number[];
+  potentialPositionsYValues: number[];
+};
+export const potentialPositionsRevealProver =
+  createProver<PotentialPositionsRevealProofInput>('potentialPositionsReveal');

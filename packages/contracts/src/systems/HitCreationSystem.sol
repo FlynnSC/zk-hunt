@@ -90,10 +90,12 @@ contract HitCreationSystem is System, HitTileOffsetListDefinitions {
       yValues: hitTilesYValues,
       merkleRoot: poseidonSystem.poseidon2(
         poseidonSystem.poseidon2(
-          poseidonSystem.poseidon2(hitTilesXValues[0], hitTilesYValues[0]), poseidonSystem.poseidon2(hitTilesXValues[1], hitTilesYValues[1])
+          poseidonSystem.poseidon2(hitTilesXValues[0], hitTilesYValues[0]), 
+          poseidonSystem.poseidon2(hitTilesXValues[1], hitTilesYValues[1])
         ),
         poseidonSystem.poseidon2(
-          poseidonSystem.poseidon2(hitTilesXValues[2], hitTilesYValues[2]), poseidonSystem.poseidon2(hitTilesXValues[3], hitTilesYValues[3])
+          poseidonSystem.poseidon2(hitTilesXValues[2], hitTilesYValues[2]), 
+          poseidonSystem.poseidon2(hitTilesXValues[3], hitTilesYValues[3])
         )
       )
     }));

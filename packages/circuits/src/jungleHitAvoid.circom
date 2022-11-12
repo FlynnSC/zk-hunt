@@ -4,24 +4,26 @@ include "../../../node_modules/circomlib/circuits/comparators.circom";
 include "../../../node_modules/circomlib/circuits/poseidon.circom";
 include "./utils/calcMerkleRoot.circom";
 include "./utils/calculateTotal.circom";
-include "./utils/isEqualToAny.circom";
 
 template jungleHitAvoid() {
     signal input x;
     signal input y;
+    signal input nonce;
+    signal input positionCommitment;
 
     var hitTileCount = 4;
     signal input hitTilesXValues[hitTileCount]; 
     signal input hitTilesYValues[hitTileCount]; 
-    signal input hitTilesMerkleRoot;
 
-    // Checks that the provided hit tiles hash to the correct merkle root
-    component calcMerkleRoot = CalcMerkleRoot(hitTileCount * 2);
-    for (var i = 0; i < hitTileCount; i++) {
-        calcMerkleRoot.in[2 * i] <== hitTilesXValues[i];
-        calcMerkleRoot.in[2 * i + 1] <== hitTilesYValues[i];
-    }
-    calcMerkleRoot.out === hitTilesMerkleRoot;
+    signal output out;
+
+    // Checks that the supplied x and y match the commitment
+    component poseidon = Poseidon(3);
+    poseidon.inputs[0] <== x;
+    poseidon.inputs[1] <== y;
+    poseidon.inputs[2] <== nonce;
+
+    poseidon.out === positionCommitment;
 
     // Checks that the passed (x, y) aren't part of the hit tiles
     component isXEquals[hitTileCount];
@@ -40,9 +42,17 @@ template jungleHitAvoid() {
     }
 
     equalitySum.out === 0;
+
+    // Checks that the provided hit tiles hash to the correct merkle root
+    component calcMerkleRoot = CalcMerkleRoot(hitTileCount * 2);
+    for (var i = 0; i < hitTileCount; i++) {
+        calcMerkleRoot.in[2 * i] <== hitTilesXValues[i];
+        calcMerkleRoot.in[2 * i + 1] <== hitTilesYValues[i];
+    }
+    out <== calcMerkleRoot.out;
 }
 
-component main {public [hitTilesMerkleRoot]} = jungleHitAvoid();
+component main {public [positionCommitment]} = jungleHitAvoid();
 
 /* INPUT = {
     "x": "1",

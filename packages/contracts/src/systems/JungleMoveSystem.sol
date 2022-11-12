@@ -18,7 +18,8 @@ contract JungleMoveSystem is MoveSystem {
   constructor(
     IWorld _world, 
     address _components,
-    address jungleMoveVerifierAddress) MoveSystem(_world, _components) {
+    address jungleMoveVerifierAddress
+  ) MoveSystem(_world, _components) {
     jungleMoveVerifier = JungleMoveVerifier(jungleMoveVerifierAddress);
     jungleMoveCountComponent = JungleMoveCountComponent(
       getAddressById(components, JungleMoveCountComponentID)
@@ -36,6 +37,8 @@ contract JungleMoveSystem is MoveSystem {
     uint256 commitment, 
     uint256[8] memory proofData
   ) public returns (bytes memory) {
+    require(jungleMoveCountComponent.has(entity), "Player is not inside the jungle");
+
     require(
       jungleMoveVerifier.verifyProof(
         proofData, 

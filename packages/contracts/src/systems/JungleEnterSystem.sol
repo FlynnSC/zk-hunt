@@ -42,10 +42,6 @@ contract JungleEnterSystem is MoveSystem {
       "Invalid proof"
     );
 
-    // IMPORTANT if the order is changed so that the position commitment is set before
-    // the position rather than after, then the logic in createPositionCommitmentSystem
-    // will break (it responds to updates to position commitment, but needs the updated
-    // values of the position at that time)
     super.move(entity, newPosition, TileType.PLAINS, TileType.JUNGLE);
     positionCommitmentComponent.set(entity, commitment);
     jungleMoveCountComponent.set(entity, 1); // Set to 1 so that client can update in response

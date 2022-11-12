@@ -7,13 +7,14 @@ import {MoveSystem, Position} from "./MoveSystem.sol";
 import {getAddressById, getSystemAddressById} from "solecs/utils.sol";
 import {JungleMoveCountComponent, ID as JungleMoveCountComponentID} from "../components/JungleMoveCountComponent.sol";
 import {PoseidonSystem, ID as PoseidonSystemID} from "./PoseidonSystem.sol";
-
+import {RevealedPotentialPositionsComponent, ID as RevealedPotentialPositionsComponentID} from "../components/RevealedPotentialPositionsComponent.sol";
 
 uint256 constant ID = uint256(keccak256("zkhunt.system.JungleExit"));
 
 contract JungleExitSystem is MoveSystem {
   JungleMoveCountComponent jungleMoveCountComponent;
   PoseidonSystem poseidonSystem;
+  RevealedPotentialPositionsComponent revealedPotentialPositionsComponent;
 
   constructor(
     IWorld _world, 
@@ -23,6 +24,9 @@ contract JungleExitSystem is MoveSystem {
       getAddressById(components, JungleMoveCountComponentID)
     );
     poseidonSystem = PoseidonSystem(getSystemAddressById(components, PoseidonSystemID));
+    revealedPotentialPositionsComponent = RevealedPotentialPositionsComponent(
+      getAddressById(components, RevealedPotentialPositionsComponentID)
+    );
   }
 
   function execute(bytes memory arguments) public returns (bytes memory) {
@@ -41,6 +45,8 @@ contract JungleExitSystem is MoveSystem {
     uint256 oldPositionNonce,
     Position memory newPosition
   ) public returns (bytes memory) {
+    require(jungleMoveCountComponent.has(entity), "Player is not inside the jungle");
+
     require(
       poseidonSystem.poseidon3(oldPosition.x, oldPosition.y, oldPositionNonce) == 
         positionCommitmentComponent.getValue(entity),
@@ -49,8 +55,7 @@ contract JungleExitSystem is MoveSystem {
 
     super.moveFrom(entity, oldPosition, newPosition, TileType.JUNGLE, TileType.PLAINS);
 
-    // Set to 0 so that players can no longer call jungleMove until they enter a jungle tile again
-    positionCommitmentComponent.set(entity, 0);
     jungleMoveCountComponent.remove(entity);
+    revealedPotentialPositionsComponent.remove(entity);
   }
 }

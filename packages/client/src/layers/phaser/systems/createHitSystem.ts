@@ -23,7 +23,7 @@ export function createHitSystem(network: NetworkLayer, phaser: PhaserLayer) {
   const {
     world,
     api: {createHit, jungleHitAvoid, jungleHitReceive},
-    components: {HitTiles, PotentialHits, MapData},
+    components: {HitTiles, PotentialHits, MapData, PositionCommitment},
   } = network;
 
   const {
@@ -88,7 +88,7 @@ export function createHitSystem(network: NetworkLayer, phaser: PhaserLayer) {
   });
 
   // TODO prevent creating a new attack if there is already one pending?
-  
+
   // Handles submission of an attack, and converting potential hit tiles to pending hit tiles
   input.click$.subscribe(() => {
     const entity = getEntityWithComponentValue(PrimingAttack);
@@ -218,17 +218,18 @@ export function createHitSystem(network: NetworkLayer, phaser: PhaserLayer) {
           });
 
           const entityID = world.entities[entity];
+          const nonce = getComponentValueStrict(Nonce, entity).value;
           if (wasHit) {
             console.log('Was hit :(');
-            const nonce = getComponentValueStrict(Nonce, entity).value;
             jungleHitReceive(entityID, hitTilesEntityID, entityPosition, nonce);
           } else {
             console.log('Dodged jungle hit :D');
             jungleHitAvoidProver({
               ...entityPosition,
+              nonce,
+              positionCommitment: getComponentValueStrict(PositionCommitment, entity).value,
               hitTilesXValues: hitTiles.xValues,
               hitTilesYValues: hitTiles.yValues,
-              hitTilesMerkleRoot: hitTiles.merkleRoot
             }).then(({proofData}) => {
               jungleHitAvoid(entityID, hitTilesEntityID, proofData);
             });

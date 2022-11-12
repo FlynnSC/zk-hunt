@@ -6,6 +6,7 @@ import {getAddressById} from "solecs/utils.sol";
 import {DeadComponent, ID as DeadComponentID} from "../components/DeadComponent.sol";
 import {PotentialHitsComponent, ID as PotentialHitsComponentID} from "../components/PotentialHitsComponent.sol";
 import {JungleMoveCountComponent, ID as JungleMoveCountComponentID} from "../components/JungleMoveCountComponent.sol";
+import {RevealedPotentialPositionsComponent, ID as RevealedPotentialPositionsComponentID} from "../components/RevealedPotentialPositionsComponent.sol";
 
 uint256 constant ID = uint256(keccak256("zkhunt.system.Kill"));
 
@@ -13,6 +14,7 @@ contract KillSystem is System {
   DeadComponent deadComponent;
   PotentialHitsComponent potentialHitsComponent;
   JungleMoveCountComponent jungleMoveCountComponent;
+  RevealedPotentialPositionsComponent revealedPotentialPositionsComponent;
 
   constructor(IWorld _world, address _components) System(_world, _components) {
     deadComponent = DeadComponent(getAddressById(components, DeadComponentID));
@@ -21,6 +23,9 @@ contract KillSystem is System {
     );
     jungleMoveCountComponent = JungleMoveCountComponent(
       getAddressById(components, JungleMoveCountComponentID)
+    );
+    revealedPotentialPositionsComponent = RevealedPotentialPositionsComponent(
+      getAddressById(components, RevealedPotentialPositionsComponentID)
     );
   }
 
@@ -33,5 +38,6 @@ contract KillSystem is System {
     deadComponent.set(entity);
     potentialHitsComponent.remove(entity);
     jungleMoveCountComponent.remove(entity);
+    revealedPotentialPositionsComponent.remove(entity);
   }
 }

@@ -8,6 +8,7 @@ import {getAddressById} from "solecs/utils.sol";
 import {GodID} from "../Constants.sol";
 import {PotentialHitsComponent, ID as PotentialHitsComponentID} from "../components/PotentialHitsComponent.sol";
 import {HitTilesComponent, ID as HitTilesComponentID} from "../components/HitTilesComponent.sol";
+import {PositionCommitmentComponent, ID as PositionCommitmentComponentID} from "../components/PositionCommitmentComponent.sol";
 
 uint256 constant ID = uint256(keccak256("zkhunt.system.JungleHitAvoid"));
 
@@ -15,6 +16,7 @@ contract JungleHitAvoidSystem is System {
   JungleHitAvoidVerifier jungleHitAvoidVerifier;
   PotentialHitsComponent potentialHitsComponent;
   HitTilesComponent hitTilesComponent;
+  PositionCommitmentComponent positionCommitmentComponent;
 
   constructor(
     IWorld _world, 
@@ -25,6 +27,9 @@ contract JungleHitAvoidSystem is System {
     hitTilesComponent = HitTilesComponent(getAddressById(components, HitTilesComponentID));
     potentialHitsComponent = PotentialHitsComponent(
       getAddressById(components, PotentialHitsComponentID)
+    );
+    positionCommitmentComponent = PositionCommitmentComponent(
+      getAddressById(components, PositionCommitmentComponentID)
     );
   }
 
@@ -43,7 +48,10 @@ contract JungleHitAvoidSystem is System {
   ) public returns (bytes memory) {
     uint256 hitTitlesMerkleRoot = hitTilesComponent.getValue(hitTilesEntity).merkleRoot;
     require(
-      jungleHitAvoidVerifier.verifyProof(proofData, [hitTitlesMerkleRoot]),
+      jungleHitAvoidVerifier.verifyProof(
+        proofData, 
+        [hitTitlesMerkleRoot, positionCommitmentComponent.getValue(entity)]
+      ),
       "Invalid proof"
     );
 
