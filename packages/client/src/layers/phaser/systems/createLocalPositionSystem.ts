@@ -1,11 +1,11 @@
 import {NetworkLayer} from '../../network';
 import {PhaserLayer} from '../types';
 import {defineComponentSystem, defineSyncSystem, EntityIndex, getComponentValue, HasValue} from '@latticexyz/recs';
-import {Sprites, TILE_HEIGHT, TILE_WIDTH} from '../constants';
-import {tileCoordToPixelCoord} from '@latticexyz/phaserx';
+import {Sprites} from '../constants';
 import {getMapTileValue, getParsedMapDataFromComponent} from '../../../utils/mapData';
 import {TileType} from '../../../constants';
 import {setPersistedComponent} from '../../../utils/persistedComponent';
+import {drawTileSprite} from '../../../utils/drawing';
 
 export function createLocalPositionSystem(network: NetworkLayer, phaser: PhaserLayer) {
   const {
@@ -15,7 +15,7 @@ export function createLocalPositionSystem(network: NetworkLayer, phaser: PhaserL
   } = network;
 
   const {
-    scenes: {Main: {objectPool, config}},
+    scenes: {Main},
     components: {LocalPosition, LocallyControlled},
   } = phaser;
 
@@ -41,27 +41,17 @@ export function createLocalPositionSystem(network: NetworkLayer, phaser: PhaserL
     // enters the jungle
     const parsedMapData = getParsedMapDataFromComponent(MapData);
     if (!position || (!locallyOwned && getMapTileValue(parsedMapData, position) === TileType.JUNGLE)) {
-      objectPool.remove(entity);
+      Main.objectPool.remove(entity);
     }
   });
 
   // Updates the sprite of entities when their local position changes
   defineComponentSystem(world, LocalPosition, ({entity, value}) => {
-    const sprite = objectPool.get(entity, 'Sprite');
     const position = value[0];
 
     if (position) {
-      sprite.setComponent({
-        id: 'PlayerSprite',
-        once: gameObject => {
-          const texture = config.sprites[Sprites.Donkey];
-          const pixelPosition = tileCoordToPixelCoord(position, TILE_WIDTH, TILE_HEIGHT);
-          gameObject.setPosition(pixelPosition.x, pixelPosition.y);
-          gameObject.setTexture(texture.assetKey, texture.frame);
-          const tint = getComponentValue(LocallyControlled, entity) ? 0xffffff : 0xff7070;
-          gameObject.setTint(tint, tint, tint, tint);
-        }
-      });
+      const tint = getComponentValue(LocallyControlled, entity) ? 0xffffff : 0xff7070;
+      drawTileSprite(Main, `PlayerSprite-${entity}`, position, Sprites.Donkey, {depth: 0, tint});
     }
   });
 }

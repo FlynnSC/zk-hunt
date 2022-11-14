@@ -1,12 +1,14 @@
 import {NetworkLayer} from '../../network';
 import {PhaserLayer} from '../types';
 import {
+  ComponentValue,
   defineComponentSystem,
   EntityIndex,
   getComponentValue,
   getComponentValueStrict,
   removeComponent,
   setComponent,
+  Type,
   updateComponent
 } from '@latticexyz/recs';
 import {lastElementOf, normalizedDiff} from '../../../utils/misc';
@@ -16,7 +18,10 @@ import {TileType} from '../../../constants';
 import {getRandomNonce} from '../../../utils/random';
 import {setPersistedComponent} from '../../../utils/persistedComponent';
 import {jungleEnterProver, jungleMoveProver} from '../../../utils/zkProving';
-import {drawTileRects} from '../../../utils/drawing';
+import {drawTileSprite} from '../../../utils/drawing';
+import {Sprites} from '../constants';
+import {angleTowardPosition, coordsEq} from '../../../utils/coords';
+import {Coord} from '@latticexyz/utils';
 
 export function createMovePathSystem(network: NetworkLayer, phaser: PhaserLayer) {
   const {
@@ -26,12 +31,17 @@ export function createMovePathSystem(network: NetworkLayer, phaser: PhaserLayer)
   } = network;
 
   const {
-    scenes: {Main: {input, objectPool}},
+    scenes: {Main},
     components: {
       CursorTilePosition, PotentialMovePath, MovePath, PendingMovePosition,
       LocalPosition, Nonce, ActionSourcePosition, PrimingMove
     },
   } = phaser;
+
+  const {input, objectPool} = Main;
+
+  // TODO make it so that automatic move submission is paused if there are any active challenges
+  // upon the unit
 
   const updatePotentialMovePath = (entity: EntityIndex, swapTraverseXFirst = false) => {
     const cursorPosition = getComponentValue(CursorTilePosition, getGodIndexStrict(world));
@@ -152,17 +162,121 @@ export function createMovePathSystem(network: NetworkLayer, phaser: PhaserLayer)
     }
   });
 
-  // Handles drawing and removal of potential move path rects
+  const getPositionsComponentElement = (
+    value: ComponentValue<{xValues: Type.NumberArray, yValues: Type.NumberArray}>, index: number
+  ) => ({x: value.xValues[index], y: value.yValues[index]});
+
+  const getPathSpriteAndRotation = (position: Coord, prevPosition: Coord, nextPosition: Coord) => {
+    if (prevPosition.x === nextPosition.x) {
+      return {sprite: Sprites.MovePathStraight, rotation: 90};
+    } else if (prevPosition.y === nextPosition.y) {
+      return {sprite: Sprites.MovePathStraight, rotation: 0};
+    } else {
+      // Yeah, this logic is kinda wack, but it works so whatever
+      let angleToPrev = angleTowardPosition(position, prevPosition);
+      let angleToNext = angleTowardPosition(position, nextPosition);
+      if (angleToPrev === 0 && angleToNext === 270) angleToPrev += 360;
+      if (angleToNext === 0 && angleToPrev === 270) angleToNext += 360;
+
+      let rotation = -angleToNext;
+      if (angleToPrev > angleToNext) rotation -= 90;
+      return {sprite: Sprites.MovePathCorner, rotation};
+    }
+  };
+
+  type PathType = ComponentValue<{xValues: Type.NumberArray, yValues: Type.NumberArray}> | undefined;
+
+  // TODO this logic could probably do with some cleaning up, especially the connector rendering :P
+  const drawPath = (
+    entity: EntityIndex, id: string, currPath: PathType, prevPath: PathType, potential: boolean,
+    continueFromPath?: boolean,
+  ) => {
+    // Removes the prev path if it exists
+    if (prevPath) {
+      prevPath.xValues.forEach((x, index) => {
+        objectPool.remove(`${id}-${entity}-${index}`);
+      });
+    }
+
+    if (currPath) {
+      currPath.xValues.forEach((x, index, arr) => {
+        // If this is the first element in the path, then the prev element is either the action
+        // source position or the last element in the move path, based on the value of
+        // continueFromPath
+        const position = {x, y: currPath.yValues[index]};
+        let prevPosition: Coord;
+        if (index === 0) {
+          if (continueFromPath) {
+            const movePath = getComponentValueStrict(MovePath, entity);
+            prevPosition = getPositionsComponentElement(movePath, movePath.xValues.length - 1);
+          } else {
+            prevPosition = getComponentValueStrict(ActionSourcePosition, entity);
+          }
+        } else {
+          prevPosition = getPositionsComponentElement(currPath, index - 1);
+        }
+
+        let sprite: Sprites;
+        let rotation;
+        if (index === arr.length - 1) {
+          sprite = Sprites.MovePathEnd;
+          rotation = -angleTowardPosition(prevPosition, position);
+        } else {
+          const nextPosition = getPositionsComponentElement(currPath, index + 1);
+          const data = getPathSpriteAndRotation(position, prevPosition, nextPosition);
+          sprite = data.sprite;
+          rotation = data.rotation;
+        }
+
+        const alpha = potential ? 0.4 : 0.7;
+        drawTileSprite(Main, `${id}-${entity}-${index}`, position, sprite, {alpha, rotation});
+      });
+    }
+
+    // Handles rendering of potential path connection to move path (if needed)
+    if (potential) {
+      objectPool.remove('PotentialMovePathConnector');
+      const movePath = getComponentValue(MovePath, entity);
+      if (currPath && movePath) {
+        let position: Coord;
+        let prevPosition: Coord;
+        if (continueFromPath) {
+          position = getPositionsComponentElement(movePath, movePath.xValues.length - 1);
+          if (movePath.xValues.length > 1) {
+            prevPosition = getPositionsComponentElement(movePath, movePath.xValues.length - 2);
+          } else {
+            prevPosition = getComponentValueStrict(LocalPosition, entity);
+          }
+        } else {
+          position = getComponentValueStrict(ActionSourcePosition, entity);
+          prevPosition = getComponentValueStrict(LocalPosition, entity);
+        }
+        const nextPosition = getPositionsComponentElement(currPath, 0);
+
+        // If the path backtracks, then don't draw the connector
+        if (!coordsEq(prevPosition, nextPosition)) {
+          const {sprite, rotation} = getPathSpriteAndRotation(position, prevPosition, nextPosition);
+          drawTileSprite(
+            Main, 'PotentialMovePathConnector', position, sprite, {alpha: 0.7, rotation}
+          );
+        }
+      }
+    }
+  };
+
+  // Handles drawing and removal of potential move path sprites
   defineComponentSystem(world, PotentialMovePath, ({entity, value}) => {
-    drawTileRects(objectPool, entity, 'PotentialMovePathRect', value[0], value[1], 0x0000ff, 0.2);
+    const [currPath, prevPath] = value;
+    drawPath(entity, 'PotentialMovePath', currPath, prevPath, true, currPath?.continueFromPath);
   });
 
   // Makes a move if possible
   const attemptMove = (entityIndex: EntityIndex) => {
-    const movePath = getComponentValueStrict(MovePath, entityIndex);
+    const movePath = getComponentValue(MovePath, entityIndex);
 
-    // Do not start a new move if there is already a pending move
-    if (getComponentValue(PendingMovePosition, entityIndex) || movePath.xValues.length === 0) {
+    // Do not start a new move if there is already a pending move, or if reached the end of the
+    // move path
+    if (getComponentValue(PendingMovePosition, entityIndex) || !movePath) {
       return;
     }
 
@@ -201,32 +315,49 @@ export function createMovePathSystem(network: NetworkLayer, phaser: PhaserLayer)
     setComponent(PendingMovePosition, entityIndex, newPosition);
   };
 
-  // Handles attempting moves if the path changes, and drawing and removal of move path rects
+  // Handles attempting moves if the path changes, and drawing and removal of move path sprites
   defineComponentSystem(world, MovePath, ({entity, value}) => {
-    const [currMovePath, prevMovePath] = value;
-    drawTileRects(objectPool, entity, 'MovePathRect', currMovePath, prevMovePath, 0x0000ff);
+    const [currPath, prevPath] = value;
+    drawPath(entity, 'MovePath', currPath, prevPath, false);
     attemptMove(entity);
   });
 
-  // Updates the action source position when the pending move position changes
+  // Updates the action source position when the pending move position changes, as well as rendering
+  // a sprite to show the pending position
   defineComponentSystem(world, PendingMovePosition, ({entity, value}) => {
     const pendingMovePosition = value[0];
     const entityPosition = getComponentValueStrict(LocalPosition, entity);
     setComponent(ActionSourcePosition, entity, pendingMovePosition ?? entityPosition);
+
+    if (pendingMovePosition) {
+      drawTileSprite(
+        Main, `PendingMovePosition-${entity}`, pendingMovePosition, Sprites.Donkey, {alpha: 0.4}
+      );
+    }
   });
 
-  // Handles updating the movePath and (indirectly) submitting the next move when a move transaction
-  // is confirmed, and updates the potential move path to match the new entity position
+  // Handles updating the movePath and submitting the next move when a move transaction is confirmed
+  // (indirectly, updating movePath handles submission in it's system), and updates the potential
+  // move path to match the new entity position
   defineComponentSystem(world, LocalPosition, ({entity}) => {
     removeComponent(PendingMovePosition, entity);
 
     const movePath = getComponentValue(MovePath, entity);
     if (movePath) {
       // Updating the move path also submits the next move if possible
-      setComponent(MovePath, entity, {
-        xValues: movePath.xValues.slice(1),
-        yValues: movePath.yValues.slice(1),
-      });
+      if (movePath.xValues.length > 1) {
+        setComponent(MovePath, entity, {
+          xValues: movePath.xValues.slice(1),
+          yValues: movePath.yValues.slice(1),
+        });
+      } else {
+        removeComponent(MovePath, entity);
+        const potentialMovePath = getComponentValue(PotentialMovePath, entity);
+        if (potentialMovePath) {
+          // Ensures the potential move path is correctly re-rendered
+          updateComponent(PotentialMovePath, entity, {continueFromPath: false});
+        }
+      }
     }
   });
 }

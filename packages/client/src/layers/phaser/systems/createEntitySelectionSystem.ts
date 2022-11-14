@@ -15,21 +15,23 @@ import {
   setComponent,
   Type
 } from '@latticexyz/recs';
-import {TILE_HEIGHT, TILE_WIDTH} from '../constants';
+import {Sprites, TILE_HEIGHT, TILE_WIDTH} from '../constants';
 import {coordsEq, isPositionWithinMapBounds} from '../../../utils/coords';
 import {deselectEntity, getSelectedEntity, selectEntity} from '../components/SelectedComponent';
 import {getIndexFromSet} from '../../../utils/misc';
 import {getGodIndex, getGodIndexStrict} from '../../../utils/entity';
-import {drawRect} from '../../../utils/drawing';
+import {drawTileSprite} from '../../../utils/drawing';
 
 export function createEntitySelectionSystem(network: NetworkLayer, phaser: PhaserLayer) {
   const {
-    scenes: {Main: {input, objectPool}},
+    scenes: {Main},
     world,
     components: {
       LocalPosition, LocallyControlled, Selected, CursorTilePosition, PrimingMove, PrimingAttack
     }
   } = phaser;
+
+  const {input, objectPool} = Main;
 
   // Updates the stored cursor (tile) position
   input.pointermove$.subscribe(e => {
@@ -52,7 +54,7 @@ export function createEntitySelectionSystem(network: NetworkLayer, phaser: Phase
   defineComponentSystem(world, CursorTilePosition, ({value}) => {
     const newCursorPosition = value[0];
     if (newCursorPosition) {
-      drawRect(objectPool, 'CursorRect', newCursorPosition, 0x0000ff);
+      drawTileSprite(Main, 'CursorRect', newCursorPosition, Sprites.Cursor, {alpha: 0.6});
     }
   });
 
@@ -90,24 +92,26 @@ export function createEntitySelectionSystem(network: NetworkLayer, phaser: Phase
     }
   });
 
-  const drawSelectedEntityRect = (entity: EntityIndex) => {
+  const drawSelectedEntitySprite = (entity: EntityIndex) => {
     const entityPosition = getComponentValueStrict(LocalPosition, entity);
-    drawRect(objectPool, `SelectedEntityRect-${entity}`, entityPosition, 0x0088ff);
+    drawTileSprite(
+      Main, `SelectedEntitySprite-${entity}`, entityPosition, Sprites.DonkeySelected, {alpha: 0.7}
+    );
   };
 
   // Handles rendering and removal of the selected entity rect
   defineComponentSystem(world, Selected, ({entity, value}) => {
     if (value[0]) {
-      drawSelectedEntityRect(entity);
+      drawSelectedEntitySprite(entity);
     } else {
-      objectPool.remove(`SelectedEntityRect-${entity}`);
+      objectPool.remove(`SelectedEntitySprite-${entity}`);
     }
   });
 
   // Handles updating the position of the selected entity rect when the entity moves
   defineComponentSystem(world, LocalPosition, ({entity}) => {
     if (hasComponent(Selected, entity)) {
-      drawSelectedEntityRect(entity);
+      drawSelectedEntitySprite(entity);
     }
   });
 

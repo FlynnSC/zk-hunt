@@ -75,11 +75,31 @@ export const phaserConfig = {
           assetKey: Assets.MainAtlas,
           frame: 'sprites/workers/donkey.png',
         },
-        // [Sprites.Soldier]: {
-        //   assetKey: Assets.MainAtlas,
-        //   frame: "sprites/warriors/hero.png",
-        // },
-      },
+        [Sprites.DonkeySelected]: {
+          assetKey: Assets.MainAtlas,
+          frame: 'sprites/workers/donkeySelected.png',
+        },
+        [Sprites.Cursor]: {
+          assetKey: Assets.MainAtlas,
+          frame: 'sprites/ui/cursor.png',
+        },
+        [Sprites.MovePathStraight]: {
+          assetKey: Assets.MainAtlas,
+          frame: 'sprites/ui/movePathStraight.png',
+        },
+        [Sprites.MovePathCorner]: {
+          assetKey: Assets.MainAtlas,
+          frame: 'sprites/ui/movePathCorner.png',
+        },
+        [Sprites.MovePathEnd]: {
+          assetKey: Assets.MainAtlas,
+          frame: 'sprites/ui/movePathEnd.png',
+        },
+        [Sprites.Hit]: {
+          assetKey: Assets.MainAtlas,
+          frame: 'sprites/ui/hit.png',
+        },
+      } as Record<Sprites, {assetKey: Assets, frame: string}>,
       animations: [],
       tilesets: {
         Default: {assetKey: Assets.OverworldTileset, tileWidth: TILE_WIDTH, tileHeight: TILE_HEIGHT},

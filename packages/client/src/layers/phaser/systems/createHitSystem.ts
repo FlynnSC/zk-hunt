@@ -11,13 +11,14 @@ import {
   setComponent
 } from '@latticexyz/recs';
 import {angleTowardPosition, coordsEq, positionToIndex} from '../../../utils/coords';
-import {drawTileRects} from '../../../utils/drawing';
+import {drawTileSprites} from '../../../utils/drawing';
 import {getEntityWithComponentValue, getGodIndexStrict, getUniqueEntityId} from '../../../utils/entity';
 import {getMapTileValue, getParsedMapDataFromComponent} from '../../../utils/mapData';
 import {Coord} from '@latticexyz/utils';
 import {ComponentValueFromComponent, lastElementOf} from '../../../utils/misc';
 import {jungleHitAvoidProver} from '../../../utils/zkProving';
 import {spearHitTileOffsetList} from '../../../utils/hitTiles';
+import {Sprites} from '../constants';
 
 export function createHitSystem(network: NetworkLayer, phaser: PhaserLayer) {
   const {
@@ -27,7 +28,7 @@ export function createHitSystem(network: NetworkLayer, phaser: PhaserLayer) {
   } = network;
 
   const {
-    scenes: {Main: {input, objectPool}},
+    scenes: {Main},
     components: {
       LocalPosition, LocallyControlled, Nonce, CursorTilePosition, PrimingAttack,
       PotentialHitTiles, PendingHitTiles, ResolvedHitTiles, ActionSourcePosition
@@ -38,7 +39,9 @@ export function createHitSystem(network: NetworkLayer, phaser: PhaserLayer) {
     const cursorPosition = getComponentValue(CursorTilePosition, getGodIndexStrict(world));
     if (!cursorPosition) return undefined;
 
-    const angle = angleTowardPosition(actionSourcePosition, cursorPosition);
+    // Bias corrects slight direction mismatch for some angle
+    const bias = 5;
+    const angle = angleTowardPosition(actionSourcePosition, cursorPosition) + bias;
     return Math.floor(angle / 360 * spearHitTileOffsetList.length);
   };
 
@@ -82,15 +85,17 @@ export function createHitSystem(network: NetworkLayer, phaser: PhaserLayer) {
     }
   });
 
-  // Handles drawing and removal of potential hit tiles rects
+  // Handles drawing and removal of potential hit tiles sprites
   defineComponentSystem(world, PotentialHitTiles, ({entity, value}) => {
-    drawTileRects(objectPool, entity, 'PotentialHitTileRect', value[0], value[1], 0xff8800, 0.2);
+    drawTileSprites(
+      Main, entity, 'PotentialHitTileSprite', value[0], value[1], Sprites.Hit, {alpha: 0.4}
+    );
   });
 
   // TODO prevent creating a new attack if there is already one pending?
 
   // Handles submission of an attack, and converting potential hit tiles to pending hit tiles
-  input.click$.subscribe(() => {
+  Main.input.click$.subscribe(() => {
     const entity = getEntityWithComponentValue(PrimingAttack);
     if (!entity) return;
 
@@ -106,9 +111,11 @@ export function createHitSystem(network: NetworkLayer, phaser: PhaserLayer) {
     }
   });
 
-  // Handles drawing and removal of pending hit tiles rects
+  // Handles drawing and removal of pending hit tiles sprites
   defineComponentSystem(world, PendingHitTiles, ({entity, value}) => {
-    drawTileRects(objectPool, entity, 'PendingHitTileRect', value[0], value[1], 0xff8800);
+    drawTileSprites(
+      Main, entity, 'PendingHitTileSprite', value[0], value[1], Sprites.Hit, {alpha: 0.7}
+    );
   });
 
   const checkIfPotentialHitsAreActive = (hitTilesEntity: EntityIndex) => {
@@ -259,9 +266,12 @@ export function createHitSystem(network: NetworkLayer, phaser: PhaserLayer) {
     }
   });
 
-  // Handles drawing and removal of resolved hit tiles rects
+  // Handles drawing and removal of resolved hit tiles sprites
   defineComponentSystem(world, ResolvedHitTiles, ({entity, value}) => {
-    drawTileRects(objectPool, entity, 'ResolvedHitTileRect', value[0], value[1], 0xff0000);
+    drawTileSprites(
+      Main, entity, 'ResolvedHitTileSprite', value[0], value[1], Sprites.Hit,
+      {alpha: 0.6, tint: 0xff0000}
+    );
   });
 
   // TODO make it so that resolved hit tiles get rid of potential positions indicators???

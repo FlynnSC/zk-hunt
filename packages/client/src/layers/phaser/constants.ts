@@ -24,6 +24,12 @@ export enum Sprites {
   EmberCrown,
   EscapePortal,
   Donkey,
+  DonkeySelected,
+  Cursor,
+  MovePathStraight,
+  MovePathCorner,
+  MovePathEnd,
+  Hit,
 }
 
 export enum Animations {}
