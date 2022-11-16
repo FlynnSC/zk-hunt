@@ -41,7 +41,7 @@ export function createLocalPositionSystem(network: NetworkLayer, phaser: PhaserL
     // enters the jungle
     const parsedMapData = getParsedMapDataFromComponent(MapData);
     if (!position || (!locallyOwned && getMapTileValue(parsedMapData, position) === TileType.JUNGLE)) {
-      Main.objectPool.remove(entity);
+      Main.objectPool.remove(`PlayerSprite-${entity}`);
     }
   });
 

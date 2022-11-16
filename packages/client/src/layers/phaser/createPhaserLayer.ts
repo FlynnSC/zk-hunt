@@ -8,7 +8,7 @@ import {createLocalPositionSystem} from './systems/createLocalPositionSystem';
 import {createJungleMovementSystem} from './systems/createJungleMovementSystem';
 import {restorePersistedComponents} from '../../utils/persistedComponent';
 import {createMapDataSystem} from './systems/createMapDataSystem';
-import {createHitSystem} from './systems/createHitSystem';
+import {createAttackSystem} from './systems/createAttackSystem';
 import {createDeadSystem} from './systems/createDeadSystem';
 import {definePotentialMovePathComponent} from './components/PotentialMovePathComponent';
 import {onStateSyncComplete} from '../../utils/onStateSyncComplete';
@@ -68,7 +68,7 @@ export async function createPhaserLayer(network: NetworkLayer) {
   createMapDataSystem(network, context);
   createLocalPositionSystem(network, context);
   createJungleMovementSystem(network, context);
-  createHitSystem(network, context);
+  createAttackSystem(network, context);
   createDeadSystem(network, context);
   createMovePathSystem(network, context);
 

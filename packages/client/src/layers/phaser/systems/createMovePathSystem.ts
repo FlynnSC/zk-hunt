@@ -17,7 +17,7 @@ import {getMapTileMerkleData, getMapTileValue, getParsedMapDataFromComponent} fr
 import {TileType} from '../../../constants';
 import {getRandomNonce} from '../../../utils/random';
 import {setPersistedComponent} from '../../../utils/persistedComponent';
-import {jungleEnterProver, jungleMoveProver} from '../../../utils/zkProving';
+import {jungleMoveProver, positionCommitmentProver} from '../../../utils/zkProving';
 import {drawTileSprite} from '../../../utils/drawing';
 import {Sprites} from '../constants';
 import {angleTowardPosition, coordsEq} from '../../../utils/coords';
@@ -294,7 +294,7 @@ export function createMovePathSystem(network: NetworkLayer, phaser: PhaserLayer)
         // New random nonce every time upon entering the jungle
         const nonce = getRandomNonce();
         setPersistedComponent(Nonce, entityIndex, {value: nonce});
-        jungleEnterProver({...newPosition, nonce}).then(({proofData, publicSignals}) => {
+        positionCommitmentProver({...newPosition, nonce}).then(({proofData, publicSignals}) => {
           jungleEnter(entityID, newPosition, publicSignals[0], proofData);
         });
       }

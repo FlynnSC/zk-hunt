@@ -34,8 +34,8 @@ function createProver<InputType extends Record<keyof InputType, BigNumberish | B
   };
 }
 
-type JungleEnterProofInput = {x: number, y: number, nonce: number};
-export const jungleEnterProver = createProver<JungleEnterProofInput>('jungleEnter');
+type PositionCommitmentProofInput = {x: number, y: number, nonce: number};
+export const positionCommitmentProver = createProver<PositionCommitmentProofInput>('positionCommitment');
 
 type JungleMoveProofInput = {
   oldX: number;

@@ -16,15 +16,16 @@ import {getEntityWithComponentValue, getGodIndexStrict, getUniqueEntityId} from 
 import {getMapTileValue, getParsedMapDataFromComponent} from '../../../utils/mapData';
 import {Coord} from '@latticexyz/utils';
 import {ComponentValueFromComponent, lastElementOf} from '../../../utils/misc';
-import {jungleHitAvoidProver} from '../../../utils/zkProving';
+import {jungleHitAvoidProver, positionCommitmentProver} from '../../../utils/zkProving';
 import {spearHitTileOffsetList} from '../../../utils/hitTiles';
 import {Sprites} from '../constants';
+import {TileType} from '../../../constants';
 
-export function createHitSystem(network: NetworkLayer, phaser: PhaserLayer) {
+export function createAttackSystem(network: NetworkLayer, phaser: PhaserLayer) {
   const {
     world,
-    api: {createHit, jungleHitAvoid, jungleHitReceive},
-    components: {HitTiles, PotentialHits, MapData, PositionCommitment},
+    api: {attack, jungleAttack, jungleHitAvoid, jungleHitReceive},
+    components: {HitTiles, PotentialHits, MapData, PositionCommitment, JungleMoveCount},
   } = network;
 
   const {
@@ -100,11 +101,21 @@ export function createHitSystem(network: NetworkLayer, phaser: PhaserLayer) {
     if (!entity) return;
 
     const actionSourcePosition = getComponentValueStrict(ActionSourcePosition, entity);
-    const direction = getAttackDirectionIndex(actionSourcePosition);
-    if (direction !== undefined) {
+    const directionIndex = getAttackDirectionIndex(actionSourcePosition);
+    if (directionIndex !== undefined) {
       const hitTilesEntityID = getUniqueEntityId(world);
       const hitTilesEntity = world.registerEntity({id: hitTilesEntityID});
-      createHit(world.entities[entity], hitTilesEntityID, direction);
+      if (hasComponent(JungleMoveCount, entity)) {
+        const nonce = getComponentValueStrict(Nonce, entity).value;
+        positionCommitmentProver({...actionSourcePosition, nonce}).then(({proofData}) => {
+          jungleAttack(
+            world.entities[entity], actionSourcePosition, proofData, hitTilesEntityID, directionIndex
+          );
+        });
+      } else {
+        attack(world.entities[entity], hitTilesEntityID, directionIndex);
+      }
+
       const potentialHitTiles = getComponentValueStrict(PotentialHitTiles, entity);
       removeComponent(PrimingAttack, entity);
       setComponent(PendingHitTiles, hitTilesEntity, potentialHitTiles);
@@ -118,20 +129,9 @@ export function createHitSystem(network: NetworkLayer, phaser: PhaserLayer) {
     );
   });
 
-  const checkIfPotentialHitsAreActive = (hitTilesEntity: EntityIndex) => {
-    const entityID = world.entities[hitTilesEntity];
-    let found = false;
-    PotentialHits.values.value.forEach(ids => ids.forEach(id => {
-      if (id === entityID) {
-        found = true;
-      }
-    }));
-    return found;
-  };
+  type HitTilesType = ComponentValueFromComponent<typeof PendingHitTiles>;
 
-  type HitTilesType = ComponentValueFromComponent<typeof PendingHitTiles>
-
-  // Removes resolved hit tiles after 2 seconds
+  // Removes resolved hit tiles after 1 second
   const createHitTilesExpiryTimeout = (
     hitTilesEntity: EntityIndex, hitTilesToExpire: HitTilesType
   ) => setTimeout(() => {
@@ -157,16 +157,19 @@ export function createHitSystem(network: NetworkLayer, phaser: PhaserLayer) {
     }
   }, 1000);
 
-  // Updates pending hit tiles to resolved hit tiles (if they can be resolved), when the hit tiles
-  // are created in the contract
+  // Updates pending and resolved hit tiles when the contract hit tiles are created, and sets a
+  // removal timeout for the resolved hit tiles
   defineComponentSystem(world, HitTiles, ({entity, value}) => {
     const hitTiles = value[0];
 
-    // Only do something if the pending hit tiles still exist (contract hit tiles are never deleted,
-    // so this ensures that wierd long-term update behavior doesn't happen???)
-    if (hitTiles && hasComponent(PendingHitTiles, entity)) {
+    if (hitTiles) {
+      // If this hit tiles entity doesn't have any associated hits (hitTiles.merkleRoot will be 0),
+      // then sets them all to resolved, otherwise sorts the hit tiles into pending and resolved
       let resolvedHitTiles: HitTilesType;
-      if (checkIfPotentialHitsAreActive(entity)) {
+      if (hitTiles.merkleRoot === '0x00') {
+        resolvedHitTiles = {xValues: hitTiles.xValues, yValues: hitTiles.yValues};
+        removeComponent(PendingHitTiles, entity);
+      } else {
         resolvedHitTiles = {xValues: [] as number[], yValues: [] as number[]};
         const pendingHitTiles = {xValues: [] as number[], yValues: [] as number[]};
 
@@ -174,8 +177,7 @@ export function createHitSystem(network: NetworkLayer, phaser: PhaserLayer) {
         hitTiles.xValues.forEach((x, index) => {
           const y = hitTiles.yValues[index];
 
-          // True if jungle (pending resolution), false if plains (instantly resolved)
-          if (getMapTileValue(parsedMapData, {x, y})) {
+          if (getMapTileValue(parsedMapData, {x, y}) === TileType.JUNGLE) {
             pendingHitTiles.xValues.push(x);
             pendingHitTiles.yValues.push(y);
           } else {
@@ -185,12 +187,18 @@ export function createHitSystem(network: NetworkLayer, phaser: PhaserLayer) {
         });
 
         setComponent(PendingHitTiles, entity, pendingHitTiles);
-      } else {
-        resolvedHitTiles = {xValues: hitTiles.xValues, yValues: hitTiles.yValues};
-        removeComponent(PendingHitTiles, entity);
       }
       setComponent(ResolvedHitTiles, entity, resolvedHitTiles);
       createHitTilesExpiryTimeout(entity, resolvedHitTiles);
+    } else {
+      // Resolve and set expiry for any pending tiles that are left when the contract hit tiles are
+      // destroyed
+      const pendingHitTiles = getComponentValue(PendingHitTiles, entity);
+      if (pendingHitTiles) {
+        setComponent(ResolvedHitTiles, entity, pendingHitTiles);
+        removeComponent(PendingHitTiles, entity);
+        createHitTilesExpiryTimeout(entity, pendingHitTiles);
+      }
     }
   });
 
@@ -204,65 +212,40 @@ export function createHitSystem(network: NetworkLayer, phaser: PhaserLayer) {
     const prevIDs = value[1]?.value ?? [];
 
     // Assumes that the potential hits array can only change by a single element at a time
-    if (currIDs.length > prevIDs.length) {
-      // jungleHit/jungleDodge response
-      if (getComponentValue(LocallyControlled, entity)) {
-        // Because the potential hits are created before the hit tiles entity contract-side (for
-        // good reason), the world.getEntityIndexStrict() will fail unless put into a timeout with
-        // length 0, to allow the update to HitTiles to be processed first
-        setTimeout(() => {
-          // A newly added id will always be at the end
-          const hitTilesEntityID = lastElementOf(currIDs) as EntityID;
-          const hitTilesEntityIndex = world.getEntityIndexStrict(hitTilesEntityID);
-          const hitTiles = getComponentValueStrict(HitTiles, hitTilesEntityIndex);
-          const entityPosition = getComponentValueStrict(LocalPosition, entity);
+    if (currIDs.length > prevIDs.length && getComponentValue(LocallyControlled, entity)) {
+      // Because the potential hits are created before the hit tiles entity contract-side (for
+      // good reason), the world.getEntityIndexStrict() will fail unless put into a timeout with
+      // length 0, to allow the update to HitTiles to be processed first
+      setTimeout(() => {
+        // A newly added id will always be at the end
+        const hitTilesEntityID = lastElementOf(currIDs) as EntityID;
+        const hitTilesEntityIndex = world.getEntityIndexStrict(hitTilesEntityID);
+        const hitTiles = getComponentValueStrict(HitTiles, hitTilesEntityIndex);
+        const entityPosition = getComponentValueStrict(LocalPosition, entity);
 
-          let wasHit = false;
-          hitTiles.xValues.forEach((x, index) => {
-            if (coordsEq(entityPosition, {x, y: hitTiles.yValues[index]})) {
-              wasHit = true;
-            }
-          });
-
-          const entityID = world.entities[entity];
-          const nonce = getComponentValueStrict(Nonce, entity).value;
-          if (wasHit) {
-            console.log('Was hit :(');
-            jungleHitReceive(entityID, hitTilesEntityID, entityPosition, nonce);
-          } else {
-            console.log('Dodged jungle hit :D');
-            jungleHitAvoidProver({
-              ...entityPosition,
-              nonce,
-              positionCommitment: getComponentValueStrict(PositionCommitment, entity).value,
-              hitTilesXValues: hitTiles.xValues,
-              hitTilesYValues: hitTiles.yValues,
-            }).then(({proofData}) => {
-              jungleHitAvoid(entityID, hitTilesEntityID, proofData);
-            });
+        let wasHit = false;
+        hitTiles.xValues.forEach((x, index) => {
+          if (coordsEq(entityPosition, {x, y: hitTiles.yValues[index]})) {
+            wasHit = true;
           }
-        }, 0);
-      }
-    } else {
-      // Finds the id that has been removed
-      const hitTilesEntityID = prevIDs.find((id, index) => currIDs[index] !== id) as EntityID;
-      const hitTilesEntity = world.getEntityIndexStrict(hitTilesEntityID);
+        });
 
-      // Pending hit tiles expiry if possible
-      if (!checkIfPotentialHitsAreActive(hitTilesEntity)) {
-        const pendingHitTiles = getComponentValue(PendingHitTiles, hitTilesEntity);
-        if (pendingHitTiles) {
-          removeComponent(PendingHitTiles, hitTilesEntity);
-          const resolvedHitTiles = getComponentValue(ResolvedHitTiles, hitTilesEntity) ??
-            {xValues: [], yValues: []};
-          setComponent(ResolvedHitTiles, hitTilesEntity, {
-            xValues: [...resolvedHitTiles.xValues, ...pendingHitTiles.xValues],
-            yValues: [...resolvedHitTiles.yValues, ...pendingHitTiles.yValues],
+        const entityID = world.entities[entity];
+        const nonce = getComponentValueStrict(Nonce, entity).value;
+        if (wasHit) {
+          jungleHitReceive(entityID, hitTilesEntityID, entityPosition, nonce);
+        } else {
+          jungleHitAvoidProver({
+            ...entityPosition,
+            nonce,
+            positionCommitment: getComponentValueStrict(PositionCommitment, entity).value,
+            hitTilesXValues: hitTiles.xValues,
+            hitTilesYValues: hitTiles.yValues,
+          }).then(({proofData}) => {
+            jungleHitAvoid(entityID, hitTilesEntityID, proofData);
           });
-
-          createHitTilesExpiryTimeout(hitTilesEntity, pendingHitTiles);
         }
-      }
+      }, 0);
     }
   });
 

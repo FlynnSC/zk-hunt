@@ -2,11 +2,9 @@
 pragma solidity >=0.8.0;
 import "solecs/System.sol";
 import {IWorld} from "solecs/interfaces/IWorld.sol";
-import {TileType} from "../components/MapDataComponent.sol";
 import {getAddressById, getSystemAddressById} from "solecs/utils.sol";
 import {HitTilesComponent, ID as HitTilesComponentID, HitTileSet} from "../components/HitTilesComponent.sol";
 import {PositionComponent, ID as PositionComponentID, Position} from "../components/PositionComponent.sol";
-import {PotentialHitsComponent, ID as PotentialHitsComponentID} from "../components/PotentialHitsComponent.sol";
 import {PositionCommitmentComponent, ID as PositionCommitmentComponentID} from "../components/PositionCommitmentComponent.sol";
 import {KillSystem, ID as KillSystemID} from "./KillSystem.sol";
 import {PoseidonSystem, ID as PoseidonSystemID} from "./PoseidonSystem.sol";
@@ -19,7 +17,6 @@ contract JungleHitReceiveSystem is System {
   PositionCommitmentComponent positionCommitmentComponent;
   KillSystem killSystem;
   PoseidonSystem poseidonSystem;
-  PotentialHitsComponent potentialHitsComponent;
 
   constructor(IWorld _world, address _components) System(_world, _components) {
     hitTilesComponent = HitTilesComponent(getAddressById(components, HitTilesComponentID));
@@ -28,10 +25,7 @@ contract JungleHitReceiveSystem is System {
       getAddressById(components, PositionCommitmentComponentID)
     );
     killSystem = KillSystem(getSystemAddressById(components, KillSystemID));
-    poseidonSystem = PoseidonSystem(
-      getSystemAddressById(components, PoseidonSystemID)
-    );
-    potentialHitsComponent = PotentialHitsComponent(getAddressById(components, PotentialHitsComponentID));
+    poseidonSystem = PoseidonSystem(getSystemAddressById(components, PoseidonSystemID));
   }
 
   function execute(bytes memory arguments) public returns (bytes memory) {

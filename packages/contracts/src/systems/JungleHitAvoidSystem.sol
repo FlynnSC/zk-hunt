@@ -4,9 +4,9 @@ import "solecs/System.sol";
 import {IWorld} from "solecs/interfaces/IWorld.sol";
 import {TileType} from "../components/MapDataComponent.sol";
 import {JungleHitAvoidVerifier} from "../dependencies/JungleHitAvoidVerifier.sol";
-import {getAddressById} from "solecs/utils.sol";
+import {getAddressById, getSystemAddressById} from "solecs/utils.sol";
 import {GodID} from "../Constants.sol";
-import {PotentialHitsComponent, ID as PotentialHitsComponentID} from "../components/PotentialHitsComponent.sol";
+import {PotentialHitUpdateSystem, ID as PotentialHitUpdateSystemID, UpdateType} from "../systems/PotentialHitUpdateSystem.sol";
 import {HitTilesComponent, ID as HitTilesComponentID} from "../components/HitTilesComponent.sol";
 import {PositionCommitmentComponent, ID as PositionCommitmentComponentID} from "../components/PositionCommitmentComponent.sol";
 
@@ -14,7 +14,7 @@ uint256 constant ID = uint256(keccak256("zkhunt.system.JungleHitAvoid"));
 
 contract JungleHitAvoidSystem is System {
   JungleHitAvoidVerifier jungleHitAvoidVerifier;
-  PotentialHitsComponent potentialHitsComponent;
+  PotentialHitUpdateSystem potentialHitUpdateSystem;
   HitTilesComponent hitTilesComponent;
   PositionCommitmentComponent positionCommitmentComponent;
 
@@ -25,8 +25,8 @@ contract JungleHitAvoidSystem is System {
   ) System(_world, _components) {
     jungleHitAvoidVerifier = JungleHitAvoidVerifier(jungleHitAvoidVerifierAddress);
     hitTilesComponent = HitTilesComponent(getAddressById(components, HitTilesComponentID));
-    potentialHitsComponent = PotentialHitsComponent(
-      getAddressById(components, PotentialHitsComponentID)
+    potentialHitUpdateSystem = PotentialHitUpdateSystem(
+      getSystemAddressById(components, PotentialHitUpdateSystemID)
     );
     positionCommitmentComponent = PositionCommitmentComponent(
       getAddressById(components, PositionCommitmentComponentID)
@@ -40,7 +40,7 @@ contract JungleHitAvoidSystem is System {
   }
 
   // Assumes that the provided hitTilesEntity is actually one of the potential hits, 
-  // removePotentialHit() does nothing if it isn't
+  // potentialHitUpdateSystem.executeTyped(..., Update.REMOVE) does nothing if it isn't
   function executeTyped(
     uint256 entity, 
     uint256 hitTilesEntity,
@@ -55,6 +55,6 @@ contract JungleHitAvoidSystem is System {
       "Invalid proof"
     );
 
-    potentialHitsComponent.removePotentialHit(entity, hitTilesEntity); 
+    potentialHitUpdateSystem.executeTyped(entity, hitTilesEntity, UpdateType.REMOVE); 
   }
 }

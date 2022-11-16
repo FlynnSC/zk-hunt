@@ -96,8 +96,12 @@ export async function createNetworkLayer(config: GameConfig) {
     systems['zkhunt.system.JungleExit'].executeTyped(entity, oldPosition, oldPositionNonce, newPosition);
   }
 
-  function createHit(entity: EntityID, hitTilesEntity: EntityID, direction: Direction) {
-    systems['zkhunt.system.HitCreation'].executeTyped(entity, hitTilesEntity, direction);
+  function attack(entity: EntityID, hitTilesEntity: EntityID, direction: Direction) {
+    systems['zkhunt.system.Attack'].executeTyped(entity, hitTilesEntity, direction);
+  }
+
+  function jungleAttack(entity: EntityID, position: Coord, proofData: string[], hitTilesEntity: EntityID, direction: Direction) {
+    systems['zkhunt.system.JungleAttack'].executeTyped(entity, position, proofData, hitTilesEntity, direction);
   }
 
   function jungleHitAvoid(entity: EntityID, hitTilesEntity: EntityID, proofData: string[]) {
@@ -125,7 +129,7 @@ export async function createNetworkLayer(config: GameConfig) {
     network,
     actions,
     api: {
-      spawn, plainsMove, jungleEnter, jungleMove, jungleExit, createHit, jungleHitAvoid,
+      spawn, plainsMove, jungleEnter, jungleMove, jungleExit, attack, jungleAttack, jungleHitAvoid,
       jungleHitReceive, revealPotentialPositions
     },
     dev: setupDevSystems(world, encoders, systems),
