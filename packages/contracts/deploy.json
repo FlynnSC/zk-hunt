@@ -8,7 +8,11 @@
     "HitTilesComponent",
     "PotentialHitsComponent",
     "DeadComponent",
-    "RevealedPotentialPositionsComponent"
+    "RevealedPotentialPositionsComponent",
+    "ChallengeTilesComponent",
+    "PendingChallengesComponent",
+    "PublicKeyComponent",
+    "SearchResultComponent"
   ],
   "systems": [
     {"name": "ComponentDevSystem", "writeAccess": ["*"]},
@@ -44,7 +48,10 @@
         "RevealedPotentialPositionsComponent"
       ]
     },
-    {"name": "SpawnSystem", "writeAccess": ["PositionComponent", "ControlledByComponent"]},
+    {
+      "name": "SpawnSystem",
+      "writeAccess": ["PositionComponent", "ControlledByComponent", "PublicKeyComponent"]
+    },
     {
       "name": "PotentialHitUpdateSystem",
       "writeAccess": ["PotentialHitsComponent", "HitTilesComponent"]
@@ -70,6 +77,16 @@
       "dependencies": ["PositionCommitmentVerifier"]
     },
     {"name": "AttackSystem", "writeAccess": ["HitTilesComponent"]},
-    {"name": "JungleAttackSystem"}
+    {"name": "JungleAttackSystem"},
+    {
+      "name": "PendingChallengeUpdateSystem",
+      "writeAccess": ["ChallengeTilesComponent", "PendingChallengesComponent"]
+    },
+    {"name": "SearchSystem", "writeAccess": ["ChallengeTilesComponent"]},
+    {
+      "name": "SearchResponseSystem",
+      "writeAccess": ["SearchResultComponent"],
+      "dependencies": ["SearchResponseVerifier"]
+    }
   ]
 }

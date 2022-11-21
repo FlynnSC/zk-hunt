@@ -7,6 +7,9 @@ import {getSelectedEntity} from '../../phaser/components/SelectedComponent';
 import {random} from '@latticexyz/utils';
 import {positionToIndex} from '../../../utils/coords';
 import {potentialPositionsRevealProver} from '../../../utils/zkProving';
+import {Keypair, PrivKey} from 'maci-domainobjs';
+import {getGodIndexStrict} from '../../../utils/entity';
+import {setPersistedComponent} from '../../../utils/persistedComponent';
 
 export function registerControlPanel() {
   registerUIComponent(
@@ -23,15 +26,27 @@ export function registerControlPanel() {
         network: {
           world,
           api: {spawn, revealPotentialPositions},
-          network: {connectedAddress},
           components: {JungleMoveCount, PositionCommitment}
         },
         phaser: {
-          components: {LocalPosition, PotentialPositions, Selected, Nonce},
+          components: {LocalPosition, PotentialPositions, Selected, Nonce, PrivateKey},
         }
       } = layers;
 
-      const onSpawn = () => spawn(connectedAddress.get()!);
+      const onSpawn = () => {
+        const godIndex = getGodIndexStrict(world);
+        let keyPair;
+        if (hasComponent(PrivateKey, godIndex)) {
+          const privateKey = BigInt(getComponentValueStrict(PrivateKey, godIndex).value);
+          keyPair = new Keypair(new PrivKey(privateKey));
+        } else {
+          keyPair = new Keypair();
+          setPersistedComponent(
+            PrivateKey, godIndex, {value: keyPair.privKey.rawPrivKey.toString()}
+          );
+        }
+        spawn(keyPair.pubKey.rawPubKey.map(val => val.valueOf()));
+      };
 
       const onRevealPotentialPositions = () => {
         const selectedEntity = getSelectedEntity(Selected);

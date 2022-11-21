@@ -13,13 +13,12 @@ import {
 import {angleTowardPosition, coordsEq, positionToIndex} from '../../../utils/coords';
 import {drawTileSprites} from '../../../utils/drawing';
 import {getEntityWithComponentValue, getGodIndexStrict, getUniqueEntityId} from '../../../utils/entity';
-import {getMapTileValue, getParsedMapDataFromComponent} from '../../../utils/mapData';
+import {getParsedMapData, isMapTileJungle} from '../../../utils/mapData';
 import {Coord} from '@latticexyz/utils';
 import {ComponentValueFromComponent, lastElementOf} from '../../../utils/misc';
 import {jungleHitAvoidProver, positionCommitmentProver} from '../../../utils/zkProving';
 import {spearHitTileOffsetList} from '../../../utils/hitTiles';
 import {Sprites} from '../constants';
-import {TileType} from '../../../constants';
 
 export function createAttackSystem(network: NetworkLayer, phaser: PhaserLayer) {
   const {
@@ -173,11 +172,11 @@ export function createAttackSystem(network: NetworkLayer, phaser: PhaserLayer) {
         resolvedHitTiles = {xValues: [] as number[], yValues: [] as number[]};
         const pendingHitTiles = {xValues: [] as number[], yValues: [] as number[]};
 
-        const parsedMapData = getParsedMapDataFromComponent(MapData);
+        const parsedMapData = getParsedMapData(MapData);
         hitTiles.xValues.forEach((x, index) => {
           const y = hitTiles.yValues[index];
 
-          if (getMapTileValue(parsedMapData, {x, y}) === TileType.JUNGLE) {
+          if (isMapTileJungle(parsedMapData, {x, y})) {
             pendingHitTiles.xValues.push(x);
             pendingHitTiles.yValues.push(y);
           } else {
@@ -212,7 +211,7 @@ export function createAttackSystem(network: NetworkLayer, phaser: PhaserLayer) {
     const prevIDs = value[1]?.value ?? [];
 
     // Assumes that the potential hits array can only change by a single element at a time
-    if (currIDs.length > prevIDs.length && getComponentValue(LocallyControlled, entity)) {
+    if (currIDs.length > prevIDs.length && hasComponent(LocallyControlled, entity)) {
       // Because the potential hits are created before the hit tiles entity contract-side (for
       // good reason), the world.getEntityIndexStrict() will fail unless put into a timeout with
       // length 0, to allow the update to HitTiles to be processed first

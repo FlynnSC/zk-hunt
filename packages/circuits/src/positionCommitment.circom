@@ -2,6 +2,8 @@ pragma circom 2.0.9;
 
 include "../../../node_modules/circomlib/circuits/poseidon.circom";
 
+// TODO create a version of this in utils that can be used by all other circuits that perform the 
+// same operation
 // Outputs the commitment for the supplied public position and private nonce, where the commitment 
 // is checked in the contract
 template PositionCommitment() {

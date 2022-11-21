@@ -18,11 +18,13 @@ function createProver<InputType extends Record<keyof InputType, BigNumberish | B
   const snarkjs = (window as unknown as {snarkjs: SnarkJs}).snarkjs;
 
   return async (input: InputType) => {
+    const start = Date.now();
     const {proof, publicSignals} = await snarkjs.groth16.fullProve(
       input,
       `/circuits/${circuitName}/circuit.wasm`,
       `/circuits/${circuitName}/circuit_final.zkey`
     );
+    console.log(`Proof generated for ${circuitName}, took ${(Date.now() - start) / 1000}s`);
 
     // Adds an outer array to the params string returned from exportSolidityCallData, flattens the
     // parsed nested array structure, removes the public signal values from the end (unneeded)
@@ -72,3 +74,21 @@ type PotentialPositionsRevealProofInput = {
 };
 export const potentialPositionsRevealProver =
   createProver<PotentialPositionsRevealProofInput>('potentialPositionsReveal');
+
+type SearchResponseProofInput = {
+  x: number;
+  y: number;
+  positionCommitmentNonce: number;
+  senderPrivateKey: BigNumberish;
+
+  secretNonce: number;
+  challengeTilesXValues: number[];
+  challengeTilesYValues: number[];
+
+  // Public inputs
+  senderPublicKey: BigNumberish[];
+  receiverPublicKey: BigNumberish[];
+  encryptedSecretNonce: BigNumberish[];
+  encryptionNonce: number;
+};
+export const searchResponseProver = createProver<SearchResponseProofInput>('searchResponse');

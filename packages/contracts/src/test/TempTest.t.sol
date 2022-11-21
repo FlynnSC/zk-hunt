@@ -22,9 +22,9 @@ contract TempTest is MudTest {
     JungleMoveSystem jungleMoveSystem = JungleMoveSystem(world.getSystemAddress(JungleMoveSystemID));
     PositionComponent positionComponent = PositionComponent(world.getComponent(PositionComponentID));
 
-    spawnSystem.executeTyped(alice);
-    Position memory position = positionComponent.getValue(addressToEntity(alice));
-    assertTrue(position.x != 0 || position.y != 0);
+    // spawnSystem.executeTyped(alice);
+    // Position memory position = positionComponent.getValue(addressToEntity(alice));
+    // assertTrue(position.x != 0 || position.y != 0);
     // plainsMoveSystem.executeTyped(addressToEntity(alice), Position({x: 1, y: 0}));
     // jungleEnterSystemSystem.executeTyped(addressToEntity(alice), Position({x: 2, y: 0}));
   }

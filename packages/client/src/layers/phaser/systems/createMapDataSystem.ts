@@ -3,7 +3,7 @@ import {PhaserLayer} from '../types';
 import {defineComponentSystem} from '@latticexyz/recs';
 import {MAP_SIZE} from '../../../constants';
 import {Tileset} from '../assets/tilesets/overworldTileset';
-import {getParsedMapDataFromComponent} from '../../../utils/mapData';
+import {getParsedMapData} from '../../../utils/mapData';
 import {indexToPosition} from '../../../utils/coords';
 
 const ONE = BigInt(1);
@@ -25,7 +25,7 @@ export function createMapDataSystem(network: NetworkLayer, phaser: PhaserLayer) 
   } = phaser;
 
   defineComponentSystem(world, MapData, () => {
-    const parsedMapData = getParsedMapDataFromComponent(MapData);
+    const parsedMapData = getParsedMapData(MapData);
     for (let i = 0; i < MAP_SIZE * MAP_SIZE; ++i) {
       const position = indexToPosition(i);
       MainMap.putTileAt(position, Tileset.Grass);

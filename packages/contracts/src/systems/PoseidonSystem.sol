@@ -10,11 +10,11 @@ import {ControlledByComponent, ID as ControlledByComponentID} from "../component
 import {MAP_SIZE} from "../Constants.sol";
 
 interface Poseidon2Contract {
-    function poseidon(uint256[2] memory inputs) external virtual returns (uint256);
+    function poseidon(uint256[2] memory inputs) external returns (uint256);
 }
 
 interface Poseidon3Contract {
-    function poseidon(uint256[3] memory inputs) external virtual returns (uint256);
+    function poseidon(uint256[3] memory inputs) external returns (uint256);
 }
 
 uint256 constant ID = uint256(keccak256("zkhunt.system.Poseidon"));

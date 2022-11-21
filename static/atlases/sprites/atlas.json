@@ -2639,6 +2639,27 @@
           }
         },
         {
+          "filename": "sprites/ui/eye.png",
+          "rotated": false,
+          "trimmed": false,
+          "sourceSize": {
+            "w": 16,
+            "h": 16
+          },
+          "spriteSourceSize": {
+            "x": 0,
+            "y": 0,
+            "w": 16,
+            "h": 16
+          },
+          "frame": {
+            "x": 288,
+            "y": 512,
+            "w": 16,
+            "h": 16
+          }
+        },
+        {
           "filename": "sprites/workers/fortify-imp.png",
           "rotated": false,
           "trimmed": false,

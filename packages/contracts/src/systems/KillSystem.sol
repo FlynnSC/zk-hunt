@@ -39,5 +39,6 @@ contract KillSystem is System {
     potentialHitUpdateSystem.executeTyped(entity, 0, UpdateType.CLEAR);
     jungleMoveCountComponent.remove(entity);
     revealedPotentialPositionsComponent.remove(entity);
+    // TODO add in pending challenges removal here, and properly test results of doing so?
   }
 }

@@ -9,7 +9,7 @@ template CalculateTotal(count) {
     signal sums[count];
     sums[0] <== in[0];
 
-    for (var i=1; i < count; i++) {
+    for (var i = 1; i < count; i++) {
         sums[i] <== sums[i - 1] + in[i];
     }
 

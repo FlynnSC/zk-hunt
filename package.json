@@ -20,11 +20,14 @@
     "commitizen": "^4.2.4",
     "cz-conventional-changelog": "3.3.0",
     "eslint": "^8.22.0",
+    "events": "^3.3.0",
     "husky": ">=6",
     "lerna": "^4.0.0",
     "lint-staged": ">=10",
+    "os-browserify": "^0.3.0",
     "prettier": "^2.6.2",
-    "run-pty": "^3.0.0"
+    "run-pty": "^3.0.0",
+    "stream-browserify": "^3.0.0"
   },
   "config": {
     "commitizen": {

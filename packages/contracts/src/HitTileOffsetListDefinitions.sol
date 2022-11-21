@@ -1,3 +1,5 @@
+pragma solidity >=0.8.0;
+
 contract HitTileOffsetListDefinitions {
   int8[2][4][32] spearHitTileOffsetList = [
     [[int8(1), 0], [int8(2), 0], [int8(3), 0], [int8(4), 0]],

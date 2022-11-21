@@ -27,7 +27,8 @@ export function createEntitySelectionSystem(network: NetworkLayer, phaser: Phase
     scenes: {Main},
     world,
     components: {
-      LocalPosition, LocallyControlled, Selected, CursorTilePosition, PrimingMove, PrimingAttack
+      LocalPosition, LocallyControlled, Selected, CursorTilePosition, PrimingMove, PrimingAttack,
+      PrimingSearch
     }
   } = phaser;
 
@@ -118,6 +119,7 @@ export function createEntitySelectionSystem(network: NetworkLayer, phaser: Phase
   const keyCodeToComponent: Record<string, Component<{value: Type.Boolean}>> = {
     69: PrimingMove, // E
     87: PrimingAttack, // W
+    81: PrimingSearch, // Q
   };
 
 
@@ -140,6 +142,7 @@ export function createEntitySelectionSystem(network: NetworkLayer, phaser: Phase
   const keyCodeToKey: Record<string, string> = {
     69: 'E',
     87: 'W',
+    81: 'Q',
   };
 
   // Handles updating the PrimingX components when the selected entity changes

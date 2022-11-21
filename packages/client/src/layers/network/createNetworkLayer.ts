@@ -4,7 +4,6 @@ import {
   createActionSystem,
   defineBoolComponent,
   defineCoordComponent,
-  defineNumberComponent,
   defineStringComponent,
   setupContracts
 } from '@latticexyz/std-client';
@@ -19,6 +18,8 @@ import {defineHitTilesComponent} from './components/HitTilesComponent';
 import {Direction} from '../../constants';
 import {defineCoordArrayComponent, defineStringArrayComponent} from '../../utils/components';
 import {ComponentValueFromComponent} from '../../utils/misc';
+import {defineChallengeTilesComponent} from './components/ChallengeTilesComponent';
+import {defineSearchResultComponent} from './components/SearchResultComponent';
 
 /**
  * The Network layer is the lowest layer in the client architecture.
@@ -49,7 +50,7 @@ export async function createNetworkLayer(config: GameConfig) {
       id: 'ControlledBy',
       metadata: {contractId: 'zkhunt.component.ControlledBy'}
     }),
-    JungleMoveCount: defineNumberComponent(world, {
+    JungleMoveCount: defineStringComponent(world, {
       id: 'JungleMoveCount',
       metadata: {contractId: 'zkhunt.component.JungleMoveCount'}
     }),
@@ -66,6 +67,16 @@ export async function createNetworkLayer(config: GameConfig) {
       id: 'RevealedPotentialPositions',
       metadata: {contractId: 'zkhunt.component.RevealedPotentialPositions'},
     }),
+    ChallengeTiles: defineChallengeTilesComponent(world),
+    PendingChallenges: defineStringArrayComponent(world, {
+      id: 'PendingChallenges',
+      metadata: {contractId: 'zkhunt.component.PendingChallenges'},
+    }),
+    PublicKey: defineStringArrayComponent(world, {
+      id: 'PublicKey',
+      metadata: {contractId: 'zkhunt.component.PublicKey'},
+    }),
+    SearchResult: defineSearchResultComponent(world),
   };
 
   // --- SETUP ----------------------------------------------------------------------
@@ -76,8 +87,8 @@ export async function createNetworkLayer(config: GameConfig) {
   const actions = createActionSystem(world, txReduced$);
 
   // --- API ------------------------------------------------------------------------
-  function spawn(controller: string) {
-    systems['zkhunt.system.Spawn'].executeTyped(controller);
+  function spawn(publicKey: BigNumberish[]) {
+    return systems['zkhunt.system.Spawn'].executeTyped(publicKey);
   }
 
   function plainsMove(entity: EntityID, newPosition: Coord) {
@@ -118,6 +129,14 @@ export async function createNetworkLayer(config: GameConfig) {
     systems['zkhunt.system.RevealPotentialPositions'].executeTyped(entity, potentialPositions, proofData);
   }
 
+  function search(entity: EntityID, challengeTilesEntity: EntityID, direction: Direction) {
+    systems['zkhunt.system.Search'].executeTyped(entity, challengeTilesEntity, direction);
+  }
+
+  function searchRespond(entity: EntityID, challengeTilesEntity: EntityID, encryptedSecretNonce: BigNumberish[], encryptionNonce: BigNumberish, proofData: BigNumberish[]) {
+    systems['zkhunt.system.SearchResponse'].executeTyped(entity, challengeTilesEntity, encryptedSecretNonce as [BigNumberish, BigNumberish, BigNumberish, BigNumberish], encryptionNonce, proofData);
+  }
+
   // --- CONTEXT --------------------------------------------------------------------
   const context = {
     world,
@@ -130,7 +149,7 @@ export async function createNetworkLayer(config: GameConfig) {
     actions,
     api: {
       spawn, plainsMove, jungleEnter, jungleMove, jungleExit, attack, jungleAttack, jungleHitAvoid,
-      jungleHitReceive, revealPotentialPositions
+      jungleHitReceive, revealPotentialPositions, search, searchRespond
     },
     dev: setupDevSystems(world, encoders, systems),
   };

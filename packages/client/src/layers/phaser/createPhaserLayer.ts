@@ -3,7 +3,12 @@ import {createPhaserEngine} from '@latticexyz/phaserx';
 import {phaserConfig} from './config';
 import {NetworkLayer} from '../network';
 import {createEntitySelectionSystem} from './systems/createEntitySelectionSystem';
-import {defineBoolComponent, defineCoordComponent, defineNumberComponent} from '@latticexyz/std-client';
+import {
+  defineBoolComponent,
+  defineCoordComponent,
+  defineNumberComponent,
+  defineStringComponent
+} from '@latticexyz/std-client';
 import {createLocalPositionSystem} from './systems/createLocalPositionSystem';
 import {createJungleMovementSystem} from './systems/createJungleMovementSystem';
 import {restorePersistedComponents} from '../../utils/persistedComponent';
@@ -15,6 +20,8 @@ import {onStateSyncComplete} from '../../utils/onStateSyncComplete';
 import {defineSelectedComponent} from './components/SelectedComponent';
 import {createMovePathSystem} from './systems/createMovePathSystem';
 import {defineCoordArrayComponent, defineStringArrayComponent} from '../../utils/components';
+import {createSearchSystem} from './systems/createSearchSystem';
+import {initPoseidon} from '../../utils/secretSharing';
 
 /**
  * The Phaser layer is responsible for rendering game objects to the screen.
@@ -46,8 +53,16 @@ export async function createPhaserLayer(network: NetworkLayer) {
       world,
       {id: 'PotentialHitsPendingResolution'}
     ),
+    PrivateKey: defineStringComponent(world, {id: 'PrivateKey'}),
+    PrimingSearch: defineBoolComponent(world, {id: 'PrimingSearch'}),
+    PotentialChallengeTiles: defineCoordArrayComponent(world, {id: 'PotentialChallengeTiles'}),
+    PendingChallengeTiles: defineCoordArrayComponent(world, {id: 'PendingChallengeTiles'}),
+    ResolvedChallengeTiles: defineCoordArrayComponent(world, {id: 'ResolvedChallengeTiles'}),
+    LocalJungleMoveCount: defineNumberComponent(world, {id: 'LocalJungleMoveCount'}),
+    LastKnownPositions: defineCoordArrayComponent(world, {id: 'LastKnownPositions'}),
   };
 
+  initPoseidon();
   onStateSyncComplete(network, () => restorePersistedComponents(components));
 
   // --- PHASER ENGINE SETUP --------------------------------------------------------
@@ -71,6 +86,7 @@ export async function createPhaserLayer(network: NetworkLayer) {
   createAttackSystem(network, context);
   createDeadSystem(network, context);
   createMovePathSystem(network, context);
+  createSearchSystem(network, context);
 
   return context;
 }

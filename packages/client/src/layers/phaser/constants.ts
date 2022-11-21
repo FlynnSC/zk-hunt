@@ -30,6 +30,7 @@ export enum Sprites {
   MovePathCorner,
   MovePathEnd,
   Hit,
+  Eye,
 }
 
 export enum Animations {}

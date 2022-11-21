@@ -11,8 +11,7 @@ import {
   runQuery,
   setComponent
 } from '@latticexyz/recs';
-import {TileType} from '../../../constants';
-import {getMapTileValue, getParsedMapDataFromComponent} from '../../../utils/mapData';
+import {getParsedMapData, isMapTileJungle} from '../../../utils/mapData';
 import {Coord} from '@latticexyz/utils';
 import {Tileset} from '../assets/tilesets/overworldTileset';
 import {setPersistedComponent} from '../../../utils/persistedComponent';
@@ -21,31 +20,28 @@ import {indexToPosition, positionToIndex} from '../../../utils/coords';
 export function createJungleMovementSystem(network: NetworkLayer, phaser: PhaserLayer) {
   const {
     world,
-    components: {Position, MapData, JungleMoveCount, RevealedPotentialPositions},
+    components: {MapData, JungleMoveCount, RevealedPotentialPositions},
   } = network;
 
   const {
     scenes: {Main: {maps: {MainMap}}},
-    components: {LocalPosition, MovePath, PotentialPositions, LocallyControlled},
+    components: {
+      LocalPosition, MovePath, PotentialPositions, LocallyControlled, LocalJungleMoveCount,
+      LastKnownPositions
+    },
   } = phaser;
 
-  const updatePotentialPositions = (entity: EntityIndex, moveCount: number) => {
-    // Uses the revealed potential positions if there are any
-    let potentialPositions: Coord[];
-    if (hasComponent(RevealedPotentialPositions, entity)) {
-      const revealedPotentialPositions
-        = getComponentValueStrict(RevealedPotentialPositions, entity);
-      potentialPositions = revealedPotentialPositions.xValues.map((x, index) => (
-        {x, y: revealedPotentialPositions.yValues[index]}
-      ));
-    } else {
-      potentialPositions = [getComponentValueStrict(Position, entity)];
-    }
+  const updatePotentialPositions = (entity: EntityIndex) => {
+    const lastKnownPositions = getComponentValueStrict(LastKnownPositions, entity);
+    const potentialPositions = lastKnownPositions.xValues.map((x, index) => (
+      {x, y: lastKnownPositions.yValues[index]}
+    ));
     let currEdgePositions = [...potentialPositions];
     let newEdgePositions: Coord[] = [];
-    const seenPositionIndices = new Set(potentialPositions.map(positionToIndex));
-    const parsedMapData = getParsedMapDataFromComponent(MapData);
+    const seenPositionIndices = new Set(currEdgePositions.map(positionToIndex));
+    const parsedMapData = getParsedMapData(MapData);
     const checkOffsets = [[-1, 0], [1, 0], [0, -1], [0, 1]];
+    const moveCount = getComponentValue(LocalJungleMoveCount, entity)?.value ?? 0;
 
     // This algorithm assumes that the hiding state of tiles do not change over time
     for (let step = 1; step < moveCount; ++step) {
@@ -54,10 +50,7 @@ export function createJungleMovementSystem(network: NetworkLayer, phaser: Phaser
           ([offsetX, offsetY]) => ({x: currPosition.x + offsetX, y: currPosition.y + offsetY})
         ).forEach(newPosition => {
           const positionIndex = positionToIndex(newPosition);
-          if (
-            !seenPositionIndices.has(positionIndex) &&
-            getMapTileValue(parsedMapData, newPosition) === TileType.JUNGLE
-          ) {
+          if (!seenPositionIndices.has(positionIndex) && isMapTileJungle(parsedMapData, newPosition)) {
             potentialPositions.push(newPosition);
             newEdgePositions.push(newPosition);
             seenPositionIndices.add(positionIndex);
@@ -75,16 +68,35 @@ export function createJungleMovementSystem(network: NetworkLayer, phaser: Phaser
     }, {xValues: [] as number[], yValues: [] as number[]}));
   };
 
-  // When there is a change in the jungle move count, updates the local position for the local
+  // Updates the LocalJungleMoveCount when the JungleMoveCount changes
+  defineComponentSystem(world, JungleMoveCount, ({entity, value}) => {
+    const newJungleMoveCount = Number(value[0]?.value ?? 0);
+    if (newJungleMoveCount > 0) {
+      // Increments the local jungle move count (if it is defined) such that if the local value is
+      // lower than the contract value due to private info reveal, then that information is
+      // preserved, but if the contract jungle move count is lower than the local value then the
+      // contract value is used instead
+      const oldJungleMoveCount = getComponentValue(LocalJungleMoveCount, entity)?.value ?? Infinity;
+      setComponent(LocalJungleMoveCount, entity, {
+        value: Math.min(oldJungleMoveCount + 1, newJungleMoveCount)
+      });
+    } else {
+      removeComponent(LocalJungleMoveCount, entity);
+    }
+  });
+
+  // When there is a change in the local jungle move count, updates the local position for the local
   // player, and updates the potential player positions for external players. Also removes the
   // potential player positions display when a player exits the jungle
-  defineComponentSystem(world, JungleMoveCount, ({entity, value}) => {
+  defineComponentSystem(world, LocalJungleMoveCount, ({entity, value}) => {
+    // Treats being outside the jungle as having a jungle move count of 0
     const moveCount = value[0]?.value ?? 0;
 
     // If the entity is owned by the local player, update its local position
-    if (getComponentValue(LocallyControlled, entity)?.value) {
+    if (hasComponent(LocallyControlled, entity)) {
       const movePath = getComponentValue(MovePath, entity);
-      // Only update the local position in response to jungle -> jungle movement (moveCount > 1)
+      // Only update the local position in response to jungle -> jungle movement (moveCount > 1), as
+      // updating the position when entering or exiting the jungle is handled by other systems
       if (moveCount > 1 && movePath) {
         setPersistedComponent(
           LocalPosition, entity, {x: movePath.xValues[0], y: movePath.yValues[0]}
@@ -96,25 +108,36 @@ export function createJungleMovementSystem(network: NetworkLayer, phaser: Phaser
     if (moveCount === 0) {
       removeComponent(PotentialPositions, entity);
     } else {
-      updatePotentialPositions(entity, moveCount);
+      updatePotentialPositions(entity);
+
+      // Removes non-locally controlled entities' local position after the second jungle move, so
+      // that their sprite disappears
+      const isLocallyControlled = hasComponent(LocallyControlled, entity);
+      if (!isLocallyControlled && hasComponent(LocalPosition, entity) && moveCount > 1) {
+        removeComponent(LocalPosition, entity);
+      }
     }
   });
 
-  // Updates the potential positions for an entity when there is a potential positions reveal
-  // The updatePotentialPositions() here may seem redundant, because it's also called in the
-  // JungleMoveCount defineComponentSystem() above, but mud doesn't guarantee the order in which
-  // these systems are called, and the latest RevealedPotentialPositions value needs to be present
-  // in order to update the PotentialPositions correctly
+  // Updates the last know positions for the entity if it reveals potential positions
   defineComponentSystem(world, RevealedPotentialPositions, ({entity, value}) => {
     if (value[0]) {
-      updatePotentialPositions(entity, getComponentValueStrict(JungleMoveCount, entity).value);
+      setComponent(LastKnownPositions, entity, value[0]);
+    }
+  });
+
+  // Updates the potential positions if the last known positions change (private position reveal, or
+  // public potential positions reveal)
+  defineComponentSystem(world, LastKnownPositions, ({entity, value}) => {
+    if (value[0]) {
+      updatePotentialPositions(entity);
     }
   });
 
   // Updates the total potential positions overlay
   defineComponentSystem(world, PotentialPositions, ({entity, value}) => {
     // Don't render the overlay for locally controlled entities
-    if (getComponentValue(LocallyControlled, entity)) return;
+    if (hasComponent(LocallyControlled, entity)) return;
 
     // Ensures that if there are fewer potential positions than the last render, the removed ones
     // are cleared
@@ -131,11 +154,16 @@ export function createJungleMovementSystem(network: NetworkLayer, phaser: Phaser
     const hiddenEntities = runQuery([Has(PotentialPositions)]);
     hiddenEntities.forEach(entity => {
       const potentialPositions = getComponentValueStrict(PotentialPositions, entity);
-      potentialPositions.xValues.forEach((x, index) => {
-        const positionIndex = positionToIndex({x, y: potentialPositions.yValues[index]});
-        const previousCount = tileCounts.get(positionIndex) || 0;
-        tileCounts.set(positionIndex, previousCount + 1);
-      });
+
+      // Only displays potential positions indicator for entities with more than one potential
+      // positions
+      if (potentialPositions.xValues.length > 1) {
+        potentialPositions.xValues.forEach((x, index) => {
+          const positionIndex = positionToIndex({x, y: potentialPositions.yValues[index]});
+          const previousCount = tileCounts.get(positionIndex) || 0;
+          tileCounts.set(positionIndex, previousCount + 1);
+        });
+      }
     });
 
     // Redraws the full set of potential player position indicator tiles

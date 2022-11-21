@@ -20,7 +20,7 @@ function calcTileIndex(position: Coord) {
   return position.x + position.y * MAP_SIZE;
 }
 
-export function getParsedMapDataFromComponent(
+export function getParsedMapData(
   mapDataComponent: ReturnType<typeof defineMapDataComponent>
 ): ParsedMapData {
   const mapData = getComponentValueStrict(mapDataComponent, getGodIndexStrict(mapDataComponent.world));
@@ -34,6 +34,10 @@ export function getParsedMapDataFromComponent(
 
 export function getMapTileValue(parsedMapData: ParsedMapData, position: Coord) {
   return Number((parsedMapData.map >> BigInt(calcTileIndex(position))) & ONE) as TileType;
+}
+
+export function isMapTileJungle(parsedMapData: ParsedMapData, position: Coord) {
+  return getMapTileValue(parsedMapData, position) === TileType.JUNGLE;
 }
 
 export function getMapTileMerkleData(parsedMapData: ParsedMapData, position: Coord) {

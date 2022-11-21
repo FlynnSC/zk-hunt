@@ -99,6 +99,10 @@ export const phaserConfig = {
           assetKey: Assets.MainAtlas,
           frame: 'sprites/ui/hit.png',
         },
+        [Sprites.Eye]: {
+          assetKey: Assets.MainAtlas,
+          frame: 'sprites/ui/eye.png',
+        },
       } as Record<Sprites, {assetKey: Assets, frame: string}>,
       animations: [],
       tilesets: {

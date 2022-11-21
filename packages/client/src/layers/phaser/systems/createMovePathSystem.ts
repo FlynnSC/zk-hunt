@@ -6,6 +6,7 @@ import {
   EntityIndex,
   getComponentValue,
   getComponentValueStrict,
+  hasComponent,
   removeComponent,
   setComponent,
   Type,
@@ -13,15 +14,15 @@ import {
 } from '@latticexyz/recs';
 import {lastElementOf, normalizedDiff} from '../../../utils/misc';
 import {getEntityWithComponentValue, getGodIndexStrict} from '../../../utils/entity';
-import {getMapTileMerkleData, getMapTileValue, getParsedMapDataFromComponent} from '../../../utils/mapData';
+import {getMapTileMerkleData, getMapTileValue, getParsedMapData} from '../../../utils/mapData';
 import {TileType} from '../../../constants';
-import {getRandomNonce} from '../../../utils/random';
 import {setPersistedComponent} from '../../../utils/persistedComponent';
 import {jungleMoveProver, positionCommitmentProver} from '../../../utils/zkProving';
 import {drawTileSprite} from '../../../utils/drawing';
 import {Sprites} from '../constants';
 import {angleTowardPosition, coordsEq} from '../../../utils/coords';
 import {Coord} from '@latticexyz/utils';
+import {getRandomNonce} from '../../../utils/random';
 
 export function createMovePathSystem(network: NetworkLayer, phaser: PhaserLayer) {
   const {
@@ -34,7 +35,7 @@ export function createMovePathSystem(network: NetworkLayer, phaser: PhaserLayer)
     scenes: {Main},
     components: {
       CursorTilePosition, PotentialMovePath, MovePath, PendingMovePosition,
-      LocalPosition, Nonce, ActionSourcePosition, PrimingMove
+      LocalPosition, Nonce, ActionSourcePosition, PrimingMove, LocallyControlled
     },
   } = phaser;
 
@@ -282,7 +283,7 @@ export function createMovePathSystem(network: NetworkLayer, phaser: PhaserLayer)
 
     const oldPosition = getComponentValueStrict(LocalPosition, entityIndex);
     const newPosition = {x: movePath.xValues[0], y: movePath.yValues[0]};
-    const parsedMapData = getParsedMapDataFromComponent(MapData);
+    const parsedMapData = getParsedMapData(MapData);
     const oldTileType = getMapTileValue(parsedMapData, oldPosition);
     const newTileType = getMapTileValue(parsedMapData, newPosition);
     const entityID = world.entities[entityIndex];
@@ -326,21 +327,26 @@ export function createMovePathSystem(network: NetworkLayer, phaser: PhaserLayer)
   // a sprite to show the pending position
   defineComponentSystem(world, PendingMovePosition, ({entity, value}) => {
     const pendingMovePosition = value[0];
-    const entityPosition = getComponentValueStrict(LocalPosition, entity);
-    setComponent(ActionSourcePosition, entity, pendingMovePosition ?? entityPosition);
-
     if (pendingMovePosition) {
+      setComponent(ActionSourcePosition, entity, pendingMovePosition);
       drawTileSprite(
         Main, `PendingMovePosition-${entity}`, pendingMovePosition, Sprites.Donkey, {alpha: 0.4}
       );
+    } else {
+      objectPool.remove(`PendingMovePosition-${entity}`);
     }
   });
 
   // Handles updating the movePath and submitting the next move when a move transaction is confirmed
-  // (indirectly, updating movePath handles submission in it's system), and updates the potential
-  // move path to match the new entity position
-  defineComponentSystem(world, LocalPosition, ({entity}) => {
-    removeComponent(PendingMovePosition, entity);
+  // (indirectly, updating movePath handles submission in its system), and updates the action source
+  // position
+  defineComponentSystem(world, LocalPosition, ({entity, value}) => {
+    if (hasComponent(PendingMovePosition, entity)) {
+      removeComponent(PendingMovePosition, entity);
+    }
+    if (hasComponent(LocallyControlled, entity)) {
+      setComponent(ActionSourcePosition, entity, value[0] as Coord);
+    }
 
     const movePath = getComponentValue(MovePath, entity);
     if (movePath) {

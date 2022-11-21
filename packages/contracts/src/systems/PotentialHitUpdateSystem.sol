@@ -73,6 +73,7 @@ contract PotentialHitUpdateSystem is System {
             ++assignIndex;
           }
         }
+        potentialHitsComponent.set(entity, newPotentialHits);
       }
 
       decreaseHitTilesEntityPotentialHitCount(hitTilesEntity);

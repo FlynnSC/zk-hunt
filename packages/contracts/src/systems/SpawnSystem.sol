@@ -2,19 +2,21 @@
 pragma solidity >=0.8.0;
 import "solecs/System.sol";
 import { IWorld } from "solecs/interfaces/IWorld.sol";
-import { getAddressById } from "solecs/utils.sol";
+import { getAddressById, addressToEntity } from "solecs/utils.sol";
 
 import {MapDataComponent, ID as MapDataComponentID, TileType} from "../components/MapDataComponent.sol";
 import {PositionComponent, ID as PositionComponentID, Position} from "../components/PositionComponent.sol";
 import {ControlledByComponent, ID as ControlledByComponentID} from "../components/ControlledByComponent.sol";
+import {PublicKeyComponent, ID as PublicKeyComponentID} from "../components/PublicKeyComponent.sol";
 import {MAP_SIZE} from "../Constants.sol";
 
 uint256 constant ID = uint256(keccak256("zkhunt.system.Spawn"));
 
 contract SpawnSystem is System {
-  MapDataComponent internal mapDataComponent;
-  PositionComponent internal positionComponent;
-  ControlledByComponent internal controlledByComponent;
+  MapDataComponent mapDataComponent;
+  PositionComponent positionComponent;
+  ControlledByComponent controlledByComponent;
+  PublicKeyComponent publicKeyComponent;
   
   constructor(IWorld _world, address _components) System(_world, _components) {
     mapDataComponent = MapDataComponent(getAddressById(components, MapDataComponentID));
@@ -22,14 +24,15 @@ contract SpawnSystem is System {
     controlledByComponent = ControlledByComponent(
       getAddressById(components, ControlledByComponentID)
     );
+    publicKeyComponent = PublicKeyComponent(getAddressById(components, PublicKeyComponentID));
   }
 
   function execute(bytes memory arguments) public returns (bytes memory) {
-    (address controller) = abi.decode(arguments, (address));
-    return abi.encode(executeTyped(controller));
+    (uint256[] memory publicKey) = abi.decode(arguments, (uint256[]));
+    return abi.encode(executeTyped(publicKey));
   }
 
-  function executeTyped(address controller) public returns (uint256) {        
+  function executeTyped(uint256[] memory publicKey) public returns (uint256) {        
     // TODO better random oracle (block.difficulty?)
     uint256 randomSeed = uint256(keccak256(abi.encode(block.timestamp)));
     Position memory spawnPosition;
@@ -48,7 +51,10 @@ contract SpawnSystem is System {
     }
 
     uint256 entity = world.getUniqueEntityId();
-    controlledByComponent.set(entity, controller);
+    controlledByComponent.set(entity, msg.sender);
+    // TODO Make it so that this happens when a player registers for the game, rather than when they
+    // spawn an entity
+    publicKeyComponent.set(addressToEntity(msg.sender), publicKey);
     positionComponent.set(entity, spawnPosition);
     return entity;
   }

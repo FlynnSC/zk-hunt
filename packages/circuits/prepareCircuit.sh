@@ -4,7 +4,7 @@
 circuitName=$1
 cd src
 circom "${circuitName}.circom" --r1cs --wasm
-snarkjs groth16 setup "${circuitName}.r1cs" ../pot/pot12_final.ptau circuit_0000.zkey
+snarkjs groth16 setup "${circuitName}.r1cs" ../pot/pot14_final.ptau circuit_0000.zkey
 snarkjs zkey contribute circuit_0000.zkey circuit_final.zkey --name="1st Contributor Name" -v
 snarkjs zkey export verificationkey circuit_final.zkey verification_key.json
 rm "${circuitName}.r1cs"
