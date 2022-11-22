@@ -17,7 +17,7 @@ import {drawTileSprite} from '../../../utils/drawing';
 export function createLocalPositionSystem(network: NetworkLayer, phaser: PhaserLayer) {
   const {
     world,
-    components: {Position, ControlledBy, MapData, LoadingState},
+    components: {Position, ControlledBy, MapData, LoadingState, Dead},
     network: {connectedAddress}
   } = network;
 
@@ -58,9 +58,11 @@ export function createLocalPositionSystem(network: NetworkLayer, phaser: PhaserL
     if (position) {
       const locallyControlled = hasComponent(LocallyControlled, entity);
       const isInJungleTiles = isMapTileJungle(getParsedMapData(MapData), position);
-      const tint = locallyControlled ? 0xffffff : 0xff7070;
-      const alpha = !locallyControlled && isInJungleTiles ? 0.6 : 1;
-      drawTileSprite(Main, `PlayerSprite-${entity}`, position, Sprites.Donkey, {depth: 0, tint, alpha});
+      const isDead = hasComponent(Dead, entity);
+      const sprite = isDead ? Sprites.Gold : Sprites.Donkey;
+      const tint = locallyControlled || isDead ? 0xffffff : 0xff7070;
+      const alpha = !locallyControlled && isInJungleTiles && !isDead ? 0.6 : 1;
+      drawTileSprite(Main, `PlayerSprite-${entity}`, position, sprite, {depth: 0, tint, alpha});
     } else {
       Main.objectPool.remove(`PlayerSprite-${entity}`);
     }

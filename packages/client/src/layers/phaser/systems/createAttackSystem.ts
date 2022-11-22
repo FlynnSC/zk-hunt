@@ -194,7 +194,11 @@ export function createAttackSystem(network: NetworkLayer, phaser: PhaserLayer) {
       // destroyed
       const pendingHitTiles = getComponentValue(PendingHitTiles, entity);
       if (pendingHitTiles) {
-        setComponent(ResolvedHitTiles, entity, pendingHitTiles);
+        const oldResolvedHitTiles = getComponentValue(ResolvedHitTiles, entity);
+        setComponent(ResolvedHitTiles, entity, {
+          xValues: [...(oldResolvedHitTiles?.xValues ?? []), ...pendingHitTiles.xValues],
+          yValues: [...(oldResolvedHitTiles?.yValues ?? []), ...pendingHitTiles.yValues],
+        });
         removeComponent(PendingHitTiles, entity);
         createHitTilesExpiryTimeout(entity, pendingHitTiles);
       }
