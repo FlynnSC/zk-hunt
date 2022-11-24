@@ -211,7 +211,11 @@ export function createSearchSystem(network: NetworkLayer, phaser: PhaserLayer) {
       // destroyed
       const pendingChallengeTiles = getComponentValue(PendingChallengeTiles, entity);
       if (pendingChallengeTiles) {
-        setComponent(ResolvedChallengeTiles, entity, pendingChallengeTiles);
+        const oldResolvedChallengeTiles = getComponentValue(ResolvedChallengeTiles, entity);
+        setComponent(ResolvedChallengeTiles, entity, {
+          xValues: [...(oldResolvedChallengeTiles?.xValues ?? []), ...pendingChallengeTiles.xValues],
+          yValues: [...(oldResolvedChallengeTiles?.yValues ?? []), ...pendingChallengeTiles.yValues],
+        });
         removeComponent(PendingChallengeTiles, entity);
         createChallengeTilesExpiryTimeout(entity, pendingChallengeTiles);
       }
