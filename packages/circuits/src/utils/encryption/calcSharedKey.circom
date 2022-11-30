@@ -1,20 +1,21 @@
-pragma circom 2.0.9;
+pragma circom 2.1.2;
 include "../../../../../node_modules/circomlib/circuits/escalarmulany.circom";
 include "../../../../../node_modules/circomlib/circuits/escalarmulfix.circom";
 
-// This code was sourced from (https://github.com/privacy-scaling-explorations/maci), and is a 
-// combination of the Ecdh and PublicKey circuits, combined such that there is only a single 
-// Num2Bits needed
+// This code is a combination of 
+// (https://github.com/factorgroup/nightmarket/blob/main/circuits/util/ecdh.circom) and 
+// (https://github.com/privacy-scaling-explorations/maci/blob/master/circuits/circom/publickey_derivation.circom)
+// combined such that there is only a single Num2Bits needed
 
 // Returns the shared key derived from senderPrivateKey and receiverPublicKey, as well as ensuring 
 // that the senderPublicKey does correspond to the senderPrivateKey
-template SharedKey() {
+template CalcSharedKey() {
   // Use keyPair.privKey.asCircuitInputs() to get the correct value for this input
   signal input senderPrivateKey;
   signal input senderPublicKey[2];
   signal input receiverPublicKey[2];
 
-  signal output sharedKey[2];
+  signal output out[2];
 
   component privBits = Num2Bits(253);
   privBits.in <== senderPrivateKey;
@@ -42,11 +43,11 @@ template SharedKey() {
     mulAny.e[i] <== privBits.out[i];
   }
 
-  sharedKey[0] <== mulAny.out[0];
-  sharedKey[1] <== mulAny.out[1];
+  out[0] <== mulAny.out[0];
+  out[1] <== mulAny.out[1];
 }
 
-// component main = SharedKey();
+// component main = CalcSharedKey();
 
 /* INPUT = {
     "senderPrivateKey": "4666420237262245321499063121935770038540792828192482778223921013643526564486",

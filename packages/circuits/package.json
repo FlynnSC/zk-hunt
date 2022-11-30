@@ -9,6 +9,7 @@
   },
   "dependencies": {
     "circomlib": "^2.0.5",
+    "maci": "^0.0.1",
     "snarkjs": "^0.5.0"
   }
 }

@@ -12,7 +12,9 @@
     "ChallengeTilesComponent",
     "PendingChallengesComponent",
     "PublicKeyComponent",
-    "SearchResultComponent"
+    "SearchResultComponent",
+    "HiddenChallengeComponent",
+    "NullifierQueueComponent"
   ],
   "systems": [
     {"name": "ComponentDevSystem", "writeAccess": ["*"]},
@@ -24,7 +26,7 @@
     },
     {
       "TODO": "Fix up this init/poseidon stuff dude",
-      "name": "MapDataInitSystem",
+      "name": "InitSystem",
       "writeAccess": ["MapDataComponent"],
       "initialize": "abi.encode(uint256(5))"
     },
@@ -87,6 +89,21 @@
       "name": "SearchResponseSystem",
       "writeAccess": ["SearchResultComponent"],
       "dependencies": ["SearchResponseVerifier"]
+    },
+    {
+      "name": "HiddenSearchSystem",
+      "writeAccess": ["HiddenChallengeComponent"],
+      "dependencies": ["HiddenSearchVerifier"]
+    },
+    {
+      "name": "HiddenSearchResponseSystem",
+      "writeAccess": ["NullifierQueueComponent", "SearchResultComponent"],
+      "dependencies": ["HiddenSearchResponseVerifier"]
+    },
+    {
+      "name": "HiddenSearchLiquidationSystem",
+      "writeAccess": ["HiddenChallengeComponent"],
+      "dependencies": ["HiddenSearchLiquidationVerifier"]
     }
   ]
 }

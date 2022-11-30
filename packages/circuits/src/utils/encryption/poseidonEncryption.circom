@@ -5,7 +5,7 @@
     Not audited, no guarantees
 */
 
-pragma circom 2.0.9;
+pragma circom 2.1.2;
 
 include "../calculateTotal.circom";
 include "poseidon_constants.circom";

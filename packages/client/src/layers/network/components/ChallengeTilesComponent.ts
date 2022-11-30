@@ -6,7 +6,7 @@ export function defineChallengeTilesComponent(world: World) {
     {
       xValues: Type.NumberArray,
       yValues: Type.NumberArray,
-      merkleRoot: Type.String,
+      merkleChainRoot: Type.String,
       challenger: Type.String
     },
     {

@@ -1,4 +1,4 @@
-pragma circom 2.0.9;
+pragma circom 2.1.2;
 
 // Returns the sum of all elements passed into `in`. `count` determines how many 
 // elements there are

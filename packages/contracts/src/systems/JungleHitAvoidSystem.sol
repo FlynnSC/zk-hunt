@@ -46,7 +46,7 @@ contract JungleHitAvoidSystem is System {
     uint256 hitTilesEntity,
     uint256[8] memory proofData
   ) public returns (bytes memory) {
-    uint256 hitTilesMerkleRoot = hitTilesComponent.getValue(hitTilesEntity).merkleRoot;
+    uint256 hitTilesMerkleRoot = hitTilesComponent.getValue(hitTilesEntity).merkleChainRoot;
     require(
       jungleHitAvoidVerifier.verifyProof(
         proofData, 

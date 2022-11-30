@@ -57,6 +57,11 @@ contract SearchSystem is System, HitTileOffsetListDefinitions {
       "Provided directionIndex is too large"
     );
 
+    require(
+      !challengeTilesComponent.has(challengeTilesEntity), 
+      "Supplied challenge tiles entity already exists"
+    );
+
     Position memory entityPosition = positionComponent.getValue(entity);
     int8[2][4] memory challengeTilesOffsets = spearHitTileOffsetList[uint8(directionIndex)];
     uint8[] memory challengeTilesXValues = new uint8[](4);
@@ -95,43 +100,25 @@ contract SearchSystem is System, HitTileOffsetListDefinitions {
       }
     }
 
-    createChallengeTiles(
-      challengeTilesEntity, challengeTilesXValues, challengeTilesYValues, pendingChallengeExists
-    );
-  }
-
-  // Logic split out into separate function to avoid stack too deep error
-  function createChallengeTiles(
-    uint256 challengeTilesEntity, 
-    uint8[] memory xValues, 
-    uint8[] memory yValues, 
-    bool pendingChallengeExists
-  ) private {
     if (pendingChallengeExists) {
       challengeTilesComponent.set(challengeTilesEntity, ChallengeTileSet({
-        xValues: xValues,
-        yValues: yValues,
-        merkleRoot: poseidonSystem.poseidon2(
-          poseidonSystem.poseidon2(
-            poseidonSystem.poseidon2(xValues[0], yValues[0]), 
-            poseidonSystem.poseidon2(xValues[1], yValues[1])
-          ),
-          poseidonSystem.poseidon2(
-            poseidonSystem.poseidon2(xValues[2], yValues[2]), 
-            poseidonSystem.poseidon2(xValues[3], yValues[3])
-          )
+        xValues: challengeTilesXValues,
+        yValues: challengeTilesYValues,
+        merkleChainRoot: poseidonSystem.coordsPoseidonChainRoot(
+          challengeTilesXValues, challengeTilesYValues
         ),
         challenger: msg.sender
       }));
     } else {
-      // Creates hit tiles and immediately removes them if there are no pending challenges, so that the
-      // tiles can show up on clients but then immediately expire after 1 second
+      // Creates hit tiles and immediately removes them if there are no pending challenges, so that 
+      // the tiles can show up on clients but then expire after 1 second
       challengeTilesComponent.set(challengeTilesEntity, ChallengeTileSet({
-        xValues: xValues, 
-        yValues: yValues, 
-        merkleRoot: 0,
+        xValues: challengeTilesXValues,
+        yValues: challengeTilesYValues,
+        merkleChainRoot: 0,
         challenger: msg.sender
       }));
+
       challengeTilesComponent.remove(challengeTilesEntity);
     }
   }

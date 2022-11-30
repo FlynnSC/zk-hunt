@@ -3,7 +3,6 @@ pragma solidity >=0.8.0;
 import "solecs/System.sol";
 import { IWorld } from "solecs/interfaces/IWorld.sol";
 import { getAddressById } from "solecs/utils.sol";
-
 import {MapDataComponent, ID as MapDataComponentID, TileType} from "../components/MapDataComponent.sol";
 import {PositionComponent, ID as PositionComponentID, Position} from "../components/PositionComponent.sol";
 import {ControlledByComponent, ID as ControlledByComponentID} from "../components/ControlledByComponent.sol";
@@ -53,5 +52,25 @@ contract PoseidonSystem is System {
 
   function poseidon3(uint256 a, uint256 b, uint256 c) public returns (uint256) {
     return poseidon3Contract.poseidon([a, b, c]);
+  }
+
+  // TODO Yeah lmao just put this stuff into a library
+  function poseidonChainRoot(uint256[] memory values) public returns (uint256) {
+    uint256 result = values[0];
+    for (uint256 i = 1; i < values.length; ++i) {
+      result = poseidon2(result, values[i]);
+    }
+    return result;
+  }
+
+  function coordsPoseidonChainRoot(
+    uint8[] memory xValues, uint8[] memory yValues
+  ) public returns (uint256) {
+    uint256 result = poseidon2(xValues[0], xValues[1]);
+    for (uint256 i = 2; i < 2 * xValues.length; ++i) {
+      if (i < xValues.length) result = poseidon2(result, xValues[i]);
+      else result = poseidon2(result, yValues[i - xValues.length]);
+    }
+    return result;
   }
 }

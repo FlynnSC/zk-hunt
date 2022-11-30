@@ -13,8 +13,7 @@ import {
   removeComponent,
   runQuery,
   setComponent,
-  Type,
-  updateComponent
+  Type
 } from '@latticexyz/recs';
 import {Sprites, TILE_HEIGHT, TILE_WIDTH} from '../constants';
 import {coordsEq, isPositionWithinMapBounds} from '../../../utils/coords';
@@ -25,7 +24,7 @@ import {drawTileSprite} from '../../../utils/drawing';
 
 export function createEntitySelectionSystem(network: NetworkLayer, phaser: PhaserLayer) {
   const {
-    components: {Dead},
+    components: {Dead, Position},
   } = network;
 
   const {
@@ -99,12 +98,15 @@ export function createEntitySelectionSystem(network: NetworkLayer, phaser: Phase
   });
 
   // Deselects the entity if it is killed, and forces a rerender of the sprite so that it shows gold
-  // through a non-altering update to local position
+  // by updating the local position
   defineComponentSystem(world, Dead, ({entity}) => {
     if (hasComponent(Selected, entity)) {
       removeComponent(Selected, entity);
     }
-    updateComponent(LocalPosition, entity, {});
+    setComponent(
+      LocalPosition, entity,
+      getComponentValue(LocalPosition, entity) ?? getComponentValueStrict(Position, entity)
+    );
   });
 
   const drawSelectedEntitySprite = (entity: EntityIndex) => {

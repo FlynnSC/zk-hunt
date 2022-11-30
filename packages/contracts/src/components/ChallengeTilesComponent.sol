@@ -7,7 +7,7 @@ uint256 constant ID = uint256(keccak256("zkhunt.component.ChallengeTiles"));
 struct ChallengeTileSet {
   uint8[] xValues;
   uint8[] yValues;
-  uint256 merkleRoot;
+  uint256 merkleChainRoot;
   address challenger;
 }
 
@@ -24,7 +24,7 @@ contract ChallengeTilesComponent is Component {
     keys[1] = "yValues";
     values[1] = LibTypes.SchemaValue.UINT8_ARRAY;
 
-    keys[2] = "merkleRoot";
+    keys[2] = "merkleChainRoot";
     values[2] = LibTypes.SchemaValue.UINT256;
 
     keys[3] = "challenger";
@@ -34,13 +34,13 @@ contract ChallengeTilesComponent is Component {
   // TODO figure out why encoding and decoding the struct directly doesn't work on the client
   function set(uint256 entity, ChallengeTileSet memory value) public {
     // set(entity, abi.encode(value));
-    set(entity, abi.encode(value.xValues, value.yValues, value.merkleRoot, value.challenger));
+    set(entity, abi.encode(value.xValues, value.yValues, value.merkleChainRoot, value.challenger));
   }
 
   function getValue(uint256 entity) public view returns (ChallengeTileSet memory) {
     // return abi.decode(getRawValue(entity), (ChallengeTileSet));
-    (uint8[] memory xValues, uint8[] memory yValues, uint256 merkleRoot, address challenger) = 
+    (uint8[] memory xValues, uint8[] memory yValues, uint256 merkleChainRoot, address challenger) = 
       abi.decode(getRawValue(entity), (uint8[], uint8[], uint256, address));
-    return ChallengeTileSet(xValues, yValues, merkleRoot, challenger);
+    return ChallengeTileSet(xValues, yValues, merkleChainRoot, challenger);
   }
 }

@@ -1,4 +1,4 @@
-import {namespaceWorld} from '@latticexyz/recs';
+import {namespaceWorld, setComponent} from '@latticexyz/recs';
 import {createPhaserEngine} from '@latticexyz/phaserx';
 import {phaserConfig} from './config';
 import {NetworkLayer} from '../network';
@@ -18,9 +18,11 @@ import {definePotentialMovePathComponent} from './components/PotentialMovePathCo
 import {onStateSyncComplete} from '../../utils/onStateSyncComplete';
 import {defineSelectedComponent} from './components/SelectedComponent';
 import {createMovePathSystem} from './systems/createMovePathSystem';
-import {defineCoordArrayComponent, defineStringArrayComponent} from '../../utils/components';
+import {defineCoordArrayComponent, defineEntityIndexComponent} from '../../utils/components';
 import {createSearchSystem} from './systems/createSearchSystem';
 import {initPoseidon} from '../../utils/secretSharing';
+import {defineConfigComponent} from './components/ConfigComponent';
+import {getGodIndexStrict} from '../../utils/entity';
 
 /**
  * The Phaser layer is responsible for rendering game objects to the screen.
@@ -48,10 +50,6 @@ export async function createPhaserLayer(network: NetworkLayer) {
     PotentialHitTiles: defineCoordArrayComponent(world, {id: 'PotentialHitTiles'}),
     PendingHitTiles: defineCoordArrayComponent(world, {id: 'PendingHitTiles'}),
     ResolvedHitTiles: defineCoordArrayComponent(world, {id: 'ResolvedHitTiles'}),
-    PotentialHitsPendingResolution: defineStringArrayComponent(
-      world,
-      {id: 'PotentialHitsPendingResolution'}
-    ),
     PrivateKey: defineStringComponent(world, {id: 'PrivateKey'}),
     PrimingSearch: defineBoolComponent(world, {id: 'PrimingSearch'}),
     PotentialChallengeTiles: defineCoordArrayComponent(world, {id: 'PotentialChallengeTiles'}),
@@ -59,10 +57,21 @@ export async function createPhaserLayer(network: NetworkLayer) {
     ResolvedChallengeTiles: defineCoordArrayComponent(world, {id: 'ResolvedChallengeTiles'}),
     LocalJungleMoveCount: defineNumberComponent(world, {id: 'LocalJungleMoveCount'}),
     LastKnownPositions: defineCoordArrayComponent(world, {id: 'LastKnownPositions'}),
+
+    // Maps an entity to the challenge tiles entity for a hidden challenge, if they have one pending
+    // TODO allow multiple pending hidden challenges for each entity rather than just one
+    PendingHiddenChallengeTilesEntity: defineEntityIndexComponent(
+      world,
+      {id: 'PendingHiddenChallengeTilesEntity'}
+    ),
+    Config: defineConfigComponent(world),
   };
 
   initPoseidon();
-  onStateSyncComplete(network, () => restorePersistedComponents(components));
+  onStateSyncComplete(network, () => {
+    restorePersistedComponents(components);
+    setComponent(components.Config, getGodIndexStrict(world), {ignoreHiddenChallenge: false});
+  });
 
   // --- PHASER ENGINE SETUP --------------------------------------------------------
   const {game, scenes, dispose: disposePhaser} = await createPhaserEngine(phaserConfig);

@@ -12,7 +12,7 @@ import {
 } from '@latticexyz/recs';
 import {angleTowardPosition, coordsEq, positionToIndex} from '../../../utils/coords';
 import {drawTileSprites} from '../../../utils/drawing';
-import {getEntityWithComponentValue, getGodIndexStrict, getUniqueEntityId} from '../../../utils/entity';
+import {createEntity, getEntityWithComponentValue, getGodIndexStrict} from '../../../utils/entity';
 import {getParsedMapData, isMapTileJungle} from '../../../utils/mapData';
 import {Coord} from '@latticexyz/utils';
 import {ComponentValueFromComponent, lastElementOf} from '../../../utils/misc';
@@ -102,8 +102,7 @@ export function createAttackSystem(network: NetworkLayer, phaser: PhaserLayer) {
     const actionSourcePosition = getComponentValueStrict(ActionSourcePosition, entity);
     const directionIndex = getAttackDirectionIndex(actionSourcePosition);
     if (directionIndex !== undefined) {
-      const hitTilesEntityID = getUniqueEntityId(world);
-      const hitTilesEntity = world.registerEntity({id: hitTilesEntityID});
+      const [hitTilesEntity, hitTilesEntityID] = createEntity(world);
       if (hasComponent(JungleMoveCount, entity)) {
         const nonce = getComponentValueStrict(Nonce, entity).value;
         positionCommitmentProver({...actionSourcePosition, nonce}).then(({proofData}) => {
@@ -165,7 +164,7 @@ export function createAttackSystem(network: NetworkLayer, phaser: PhaserLayer) {
       // If this hit tiles entity doesn't have any associated hits (hitTiles.merkleRoot will be 0),
       // then sets them all to resolved, otherwise sorts the hit tiles into pending and resolved
       let resolvedHitTiles: HitTilesType;
-      if (hitTiles.merkleRoot === '0x00') {
+      if (hitTiles.merkleChainRoot === '0x00') {
         resolvedHitTiles = {xValues: hitTiles.xValues, yValues: hitTiles.yValues};
         removeComponent(PendingHitTiles, entity);
       } else {

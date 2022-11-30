@@ -27,3 +27,8 @@ export function getUniqueEntityId(world: World) {
 
   return entityID;
 }
+
+export function createEntity(world: World) {
+  const id = getUniqueEntityId(world);
+  return [world.registerEntity({id}), id] as const;
+}

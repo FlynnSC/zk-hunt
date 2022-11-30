@@ -26,3 +26,29 @@ export function defineCoordArrayComponent<M extends Metadata>(
     options
   );
 }
+
+export function defineNumberArrayComponent<M extends Metadata>(
+  world: World,
+  options?: {id?: string; metadata?: M; indexed?: boolean}
+) {
+  return defineComponent(
+    world,
+    {
+      value: Type.NumberArray,
+    },
+    options
+  );
+}
+
+export function defineEntityIndexComponent<M extends Metadata>(
+  world: World,
+  options?: {id?: string; metadata?: M; indexed?: boolean}
+) {
+  return defineComponent(
+    world,
+    {
+      value: Type.Number,
+    },
+    options
+  );
+}

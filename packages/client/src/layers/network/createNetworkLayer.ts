@@ -20,6 +20,8 @@ import {defineCoordArrayComponent, defineStringArrayComponent} from '../../utils
 import {ComponentValueFromComponent} from '../../utils/misc';
 import {defineChallengeTilesComponent} from './components/ChallengeTilesComponent';
 import {defineSearchResultComponent} from './components/SearchResultComponent';
+import {defineHiddenChallengeComponent} from './components/HiddenChallengeComponent';
+import {defineNullifierQueueComponent} from './components/NullifierQueueComponent';
 
 /**
  * The Network layer is the lowest layer in the client architecture.
@@ -77,6 +79,8 @@ export async function createNetworkLayer(config: GameConfig) {
       metadata: {contractId: 'zkhunt.component.PublicKey'},
     }),
     SearchResult: defineSearchResultComponent(world),
+    HiddenChallenge: defineHiddenChallengeComponent(world),
+    NullifierQueue: defineNullifierQueueComponent(world),
   };
 
   // --- SETUP ----------------------------------------------------------------------
@@ -133,8 +137,20 @@ export async function createNetworkLayer(config: GameConfig) {
     systems['zkhunt.system.Search'].executeTyped(entity, challengeTilesEntity, direction);
   }
 
-  function searchRespond(entity: EntityID, challengeTilesEntity: EntityID, encryptedSecretNonce: BigNumberish[], encryptionNonce: BigNumberish, proofData: BigNumberish[]) {
-    systems['zkhunt.system.SearchResponse'].executeTyped(entity, challengeTilesEntity, encryptedSecretNonce as [BigNumberish, BigNumberish, BigNumberish, BigNumberish], encryptionNonce, proofData);
+  function searchRespond(entity: EntityID, challengeTilesEntity: EntityID, cipherText: BigNumberish[], encryptionNonce: BigNumberish, proofData: BigNumberish[]) {
+    systems['zkhunt.system.SearchResponse'].executeTyped(entity, challengeTilesEntity, cipherText as [BigNumberish, BigNumberish, BigNumberish, BigNumberish], encryptionNonce, proofData);
+  }
+
+  function hiddenSearch(entity: EntityID, hiddenChallengeEntity: EntityID, cipherText: BigNumberish[], encryptionNonce: BigNumberish, proofData: BigNumberish[]) {
+    systems['zkhunt.system.HiddenSearch'].executeTyped(entity, hiddenChallengeEntity, cipherText, encryptionNonce, proofData);
+  }
+
+  function hiddenSearchRespond(entity: EntityID, cipherText: BigNumberish[], encryptionNonce: BigNumberish, nullifier: BigNumberish, proofData: BigNumberish[]) {
+    systems['zkhunt.system.HiddenSearchResponse'].executeTyped(entity, cipherText, encryptionNonce, nullifier, proofData);
+  }
+
+  function hiddenSearchLiquidate(hiddenChallengeEntity: EntityID, challengedEntity: EntityID, nullifier: BigNumberish, proofData: BigNumberish[]) {
+    systems['zkhunt.system.HiddenSearchLiquidation'].executeTyped(hiddenChallengeEntity, challengedEntity, nullifier, proofData);
   }
 
   // --- CONTEXT --------------------------------------------------------------------
@@ -149,7 +165,8 @@ export async function createNetworkLayer(config: GameConfig) {
     actions,
     api: {
       spawn, plainsMove, jungleEnter, jungleMove, jungleExit, attack, jungleAttack, jungleHitAvoid,
-      jungleHitReceive, revealPotentialPositions, search, searchRespond
+      jungleHitReceive, revealPotentialPositions, search, searchRespond, hiddenSearch,
+      hiddenSearchRespond, hiddenSearchLiquidate
     },
     dev: setupDevSystems(world, encoders, systems),
   };

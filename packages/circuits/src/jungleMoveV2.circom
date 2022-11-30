@@ -1,4 +1,4 @@
-pragma circom 2.0.9;
+pragma circom 2.1.2;
 
 include "../../../node_modules/circomlib/circuits/comparators.circom";
 include "../../../node_modules/circomlib/circuits/poseidon.circom";

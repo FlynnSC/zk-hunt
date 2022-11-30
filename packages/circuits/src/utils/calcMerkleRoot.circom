@@ -1,4 +1,4 @@
-pragma circom 2.0.9;
+pragma circom 2.1.2;
 
 include "../../../../node_modules/circomlib/circuits/switcher.circom";
 include "../../../../node_modules/circomlib/circuits/poseidon.circom";
@@ -59,4 +59,42 @@ template CalcMerkleRootFromPath(merkleTreeDepth) {
     }
 
     out <== poseidons[merkleTreeDepth - 1].out;
+}
+
+template CalcMerkleChainRoot(leafCount) {
+    assert(leafCount >= 2);
+
+    signal input in[leafCount];
+
+    signal output out;
+
+    component poseidons[leafCount - 1];
+    poseidons[0] = Poseidon(2);
+    poseidons[0].inputs[0] <== in[0]; 
+    poseidons[0].inputs[1] <== in[1];
+
+    for (var i = 2; i < leafCount; i++) {
+        poseidons[i - 1] = Poseidon(2);
+        poseidons[i - 1].inputs[0] <== poseidons[i - 2].out; 
+        poseidons[i - 1].inputs[1] <== in[i];
+    }
+
+    out <== poseidons[leafCount - 2].out;
+}
+
+template CalcCoordsMerkleChainRoot(coordCount) {
+    assert(coordCount >= 2);
+
+    signal input xValues[coordCount];
+    signal input yValues[coordCount];
+
+    signal output out;
+
+    component calcMerkleChainRoot = CalcMerkleChainRoot(2 * coordCount);
+    for (var i = 0; i < coordCount; i++) {
+        calcMerkleChainRoot.in[i] <== xValues[i];
+        calcMerkleChainRoot.in[coordCount + i] <== yValues[i];
+    }
+
+    out <== calcMerkleChainRoot.out;
 }

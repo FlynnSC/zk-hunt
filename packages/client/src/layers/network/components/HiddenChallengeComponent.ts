@@ -1,16 +1,18 @@
 import {defineComponent, Type, World} from '@latticexyz/recs';
 
-export function defineSearchResultComponent(world: World) {
+export function defineHiddenChallengeComponent(world: World) {
   return defineComponent(
     world,
     {
       cipherText: Type.StringArray,
       encryptionNonce: Type.String,
+      challenger: Type.String,
+      creationTimestamp: Type.String,
     },
     {
-      id: 'SearchResult',
+      id: 'HiddenChallenge',
       metadata: {
-        contractId: 'zkhunt.component.SearchResult',
+        contractId: 'zkhunt.component.HiddenChallenge',
       },
     }
   );

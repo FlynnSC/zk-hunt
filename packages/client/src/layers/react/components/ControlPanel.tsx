@@ -2,14 +2,15 @@ import React from 'react';
 import {registerUIComponent} from '../engine';
 import {of} from 'rxjs';
 import styled from 'styled-components';
-import {getComponentValueStrict, hasComponent} from '@latticexyz/recs';
+import {getComponentValue, getComponentValueStrict, hasComponent, updateComponent} from '@latticexyz/recs';
 import {getSelectedEntity} from '../../phaser/components/SelectedComponent';
 import {random} from '@latticexyz/utils';
 import {positionToIndex} from '../../../utils/coords';
 import {potentialPositionsRevealProver} from '../../../utils/zkProving';
 import {Keypair, PrivKey} from 'maci-domainobjs';
-import {getGodIndexStrict} from '../../../utils/entity';
+import {getGodIndex, getGodIndexStrict} from '../../../utils/entity';
 import {setPersistedComponent} from '../../../utils/persistedComponent';
+import {testThing} from '../../../utils/secretSharing';
 
 export function registerControlPanel() {
   registerUIComponent(
@@ -29,7 +30,7 @@ export function registerControlPanel() {
           components: {JungleMoveCount, PositionCommitment}
         },
         phaser: {
-          components: {LocalPosition, PotentialPositions, Selected, Nonce, PrivateKey},
+          components: {LocalPosition, PotentialPositions, Selected, Nonce, PrivateKey, Config},
         }
       } = layers;
 
@@ -94,10 +95,30 @@ export function registerControlPanel() {
         });
       };
 
+      const godIndex = getGodIndex(world);
+      const ignoreHiddenChallenge = godIndex && getComponentValue(
+        Config, godIndex
+      )?.ignoreHiddenChallenge;
+      const toggleIgnoreHiddenChallenge = () => {
+        updateComponent(Config, getGodIndexStrict(world), {ignoreHiddenChallenge: !ignoreHiddenChallenge})
+      };
+
+      console.log('control panel rendered');
       return (
         <Container>
-          <button onClick={onSpawn}>Spawn</button>
-          <button onClick={onRevealPotentialPositions}>Reveal</button>
+          <div>
+            <button onClick={onSpawn}>Spawn</button>
+            <button onClick={onRevealPotentialPositions}>Reveal</button>
+            <button onClick={testThing}>Test</button>
+          </div>
+          <div>
+            Ignore challenge
+            <input
+              type="checkbox"
+              checked={ignoreHiddenChallenge}
+              onChange={toggleIgnoreHiddenChallenge}
+            />
+          </div>
         </Container>
       );
     }

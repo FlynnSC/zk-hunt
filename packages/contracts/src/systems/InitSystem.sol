@@ -3,14 +3,13 @@ pragma solidity >=0.8.0;
 import "solecs/System.sol";
 import { IWorld } from "solecs/interfaces/IWorld.sol";
 import { getAddressById, getSystemAddressById } from "solecs/utils.sol";
-
 import {MapDataComponent, ID as MapDataComponentID, TileType, MapData} from "../components/MapDataComponent.sol";
 import {PoseidonSystem, ID as PoseidonSystemID} from "./PoseidonSystem.sol";
 import {MAP_SIZE, GodID} from "../Constants.sol";
 
-uint256 constant ID = uint256(keccak256("zkhunt.system.MapDataInit"));
+uint256 constant ID = uint256(keccak256("zkhunt.system.Init"));
 
-contract MapDataInitSystem is System {
+contract InitSystem is System {
   constructor(IWorld _world, address _components) System(_world, _components) {}
 
   function execute(bytes memory arguments) public returns (bytes memory) {
@@ -57,10 +56,6 @@ contract MapDataInitSystem is System {
       intermediaryNodes[intermediaryNodes.length - 2], 
       intermediaryNodes[intermediaryNodes.length - 1]
     );
-    mapDataComponent.set(GodID, MapData({
-      chunks: chunks,
-      intermediaryNodes: intermediaryNodes,
-      root: root
-    }));
+    mapDataComponent.set(GodID, MapData(chunks, intermediaryNodes, root));
   }
 }

@@ -16,7 +16,7 @@ verifierName="${circuitName^}Verifier"
 fileName="../../contracts/src/dependencies/${verifierName}.sol"
 snarkjs zkey export solidityverifier circuit_final.zkey $fileName
 sed -i -e "s/contract Verifier/contract ${verifierName}/g" $fileName # Rename contract
-sed -i -e "s/0.6.11/0.8.12/g" $fileName # Solidity version update
+sed -i -e "s/0.6.11;/0.8.12;/g" $fileName # Solidity version update
 
 # Refactor proof param passing
 sed -i "s/uint\[2\] memory a/uint[8] memory proofData/g" $fileName

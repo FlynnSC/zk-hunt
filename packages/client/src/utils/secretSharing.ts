@@ -12,6 +12,7 @@ interface PoseidonFnType {
   (inputs: (number | bigint)[]): Uint8Array;
 
   F: {
+    p: bigint;
     toObject(val: Uint8Array): bigint
   };
 }
@@ -28,6 +29,29 @@ export function poseidon(...inputs: (number | bigint)[]) {
   return poseidonFn.F.toObject(poseidonFn(inputs));
 }
 
+export function poseidonChainRoot(values: (number | bigint)[]) {
+  return values.slice(1).reduce((acc, val) => poseidon(acc, val), values[0]);
+}
+
+export function offsetToFieldElem(val: number) {
+  return val >= 0 ? BigInt(val) : poseidonFn.F.p + BigInt(val);
+}
+
+const fieldElemMask = (BigInt(1) << BigInt(253)) - BigInt(1);
+
+export function entityToFieldElem(entity: EntityID) {
+  return BigInt(entity) & fieldElemMask;
+}
+
+export function testThing() {
+  const nullifier = poseidonChainRoot([...[1, 2, 3, 4], ...[5, 6, 7, 8], 9, 11, 12]);
+  console.log(nullifier);
+}
+
+export function toBigInt(val: any) {
+  return BigInt(val);
+}
+
 export function calculateSharedKey(
   privateKeyComponent: PhaserLayer['components']['PrivateKey'],
   publicKeyComponent: NetworkLayer['components']['PublicKey'],
@@ -39,7 +63,7 @@ export function calculateSharedKey(
   const publicKey = new PubKey(getComponentValueStrict(
     publicKeyComponent,
     publicKeyComponent.world.getEntityIndexStrict(publicKeyOwner.toLowerCase() as EntityID)
-  ).value.map(val => BigInt(val)));
+  ).value.map(toBigInt));
 
   return Keypair.genEcdhSharedKey(
     privateKey,
@@ -47,37 +71,41 @@ export function calculateSharedKey(
   ).map(val => val.valueOf());
 }
 
-export function encryptSecretNonce(
-  secretNonce: number, sharedKey: bigint[], encryptionNonce: number
+export function poseidonEncrypt(
+  message: (number | bigint)[], sharedKey: bigint[], encryptionNonce: number
 ) {
   return (
-    poseidonCipher.encrypt([secretNonce], sharedKey, encryptionNonce) as string[]
-  ).map(val => BigInt(val));
+    poseidonCipher.encrypt(message, sharedKey, encryptionNonce) as string[]
+  ).map(toBigInt);
 }
 
-export function decryptSecretNonce(
-  encryptedSecretNonce: bigint[], sharedKey: bigint[], encryptionNonce: number
+export function poseidonDecrypt(
+  cipherText: (bigint | string)[], sharedKey: bigint[], encryptionNonce: number,
+  messageLength: number
 ) {
-  return poseidonCipher.decrypt(encryptedSecretNonce, sharedKey, encryptionNonce, 1);
+  // Poseidon decryption will throw if it is an invalid decryption
+  try {
+    return (
+      poseidonCipher.decrypt(
+        cipherText.map(toBigInt), sharedKey, encryptionNonce, messageLength
+      ) as string[]
+    ).map(toBigInt);
+  } catch (e) {
+    return undefined;
+  }
 }
 
-export function getSearchResponseProofInputs(
-  privateKeyComponent: PhaserLayer['components']['PrivateKey'],
-  publicKeyComponent: NetworkLayer['components']['PublicKey'],
-  senderAddress: string,
-  receiverAddress: string
-) {
+export function getPrivateKey(privateKeyComponent: PhaserLayer['components']['PrivateKey']) {
   const godIndex = getGodIndexStrict(privateKeyComponent.world);
-  const senderPrivateKey = BigInt(getComponentValueStrict(privateKeyComponent, godIndex).value);
-  const senderEntity = privateKeyComponent.world.getEntityIndexStrict(
-    senderAddress.toLocaleLowerCase() as EntityID
-  );
-  const receiverEntity = publicKeyComponent.world.getEntityIndexStrict(
-    receiverAddress.toLocaleLowerCase() as EntityID
-  );
-  return {
-    senderPrivateKey: new PrivKey(senderPrivateKey).asCircuitInputs(),
-    senderPublicKey: getComponentValueStrict(publicKeyComponent, senderEntity).value,
-    receiverPublicKey: getComponentValueStrict(publicKeyComponent, receiverEntity).value
-  };
+  const privateKeyRaw = BigInt(getComponentValueStrict(privateKeyComponent, godIndex).value);
+  return new PrivKey(privateKeyRaw).asCircuitInputs() as bigint;
+}
+
+export function getPublicKey(
+  publicKeyComponent: NetworkLayer['components']['PublicKey'],
+  address: string
+) {
+  const entityID = address.toLocaleLowerCase() as EntityID;
+  const entity = publicKeyComponent.world.getEntityIndexStrict(entityID);
+  return getComponentValueStrict(publicKeyComponent, entity).value;
 }

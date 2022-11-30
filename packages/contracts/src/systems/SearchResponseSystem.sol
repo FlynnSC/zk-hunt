@@ -41,16 +41,16 @@ contract SearchResponseSystem is System {
   }
 
   function execute(bytes memory arguments) public returns (bytes memory) {
-    (uint256 entity, uint256 challengeTilesEntity, uint256[] memory encryptedSecretNonce, 
+    (uint256 entity, uint256 challengeTilesEntity, uint256[] memory cipherText, 
       uint256 encryptionNonce, uint256[8] memory proofData) = abi.decode(arguments, 
       (uint256, uint256, uint256[], uint256, uint256[8]));
-    executeTyped(entity, challengeTilesEntity, encryptedSecretNonce, encryptionNonce, proofData);
+    executeTyped(entity, challengeTilesEntity, cipherText, encryptionNonce, proofData);
   }
 
   function executeTyped(
     uint256 entity, 
     uint256 challengeTilesEntity,
-    uint256[] memory encryptedSecretNonce,
+    uint256[] memory cipherText,
     uint256 encryptionNonce,
     uint256[8] memory proofData
   ) public returns (bytes memory) {
@@ -63,11 +63,11 @@ contract SearchResponseSystem is System {
       searchResponseVerifier.verifyProof(
         proofData, 
         [
-          positionCommitmentComponent.getValue(entity), challengeTiles.merkleRoot,
+          challengeTiles.merkleChainRoot, positionCommitmentComponent.getValue(entity),
           playerPublicKey[0], playerPublicKey[1], 
           challengerPublicKey[0], challengerPublicKey[1],
-          encryptedSecretNonce[0], encryptedSecretNonce[1], encryptedSecretNonce[2], 
-          encryptedSecretNonce[3], encryptionNonce
+          cipherText[0], cipherText[1], cipherText[2], 
+          cipherText[3], encryptionNonce
         ]
       ),
       "Invalid proof"
@@ -76,7 +76,7 @@ contract SearchResponseSystem is System {
     // Setting the search result before updating the pending challenges is important, because the
     // challenger listens for updates to the latter to determine if the former is for them to 
     // decrypt and read
-    searchResultComponent.set(entity, SearchResult(encryptedSecretNonce, encryptionNonce));
+    searchResultComponent.set(entity, SearchResult(cipherText, encryptionNonce));
     pendingChallengeUpdateSystem.executeTyped(entity, challengeTilesEntity, UpdateType.REMOVE);
   }
 }

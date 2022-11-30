@@ -136,9 +136,6 @@ export function createJungleMovementSystem(network: NetworkLayer, phaser: Phaser
 
   // Updates the total potential positions overlay
   defineComponentSystem(world, PotentialPositions, ({entity, value}) => {
-    // Don't render the overlay for locally controlled entities
-    if (hasComponent(LocallyControlled, entity)) return;
-
     // Ensures that if there are fewer potential positions than the last render, the removed ones
     // are cleared
     const oldPotentialPositions = value[1];
@@ -155,9 +152,9 @@ export function createJungleMovementSystem(network: NetworkLayer, phaser: Phaser
     hiddenEntities.forEach(entity => {
       const potentialPositions = getComponentValueStrict(PotentialPositions, entity);
 
-      // Only displays potential positions indicator for entities with more than one potential
-      // positions
-      if (potentialPositions.xValues.length > 1) {
+      // Only displays potential positions indicator for non-locally controlled entities with more
+      // than one potential positions
+      if (!hasComponent(LocallyControlled, entity) && potentialPositions.xValues.length > 1) {
         potentialPositions.xValues.forEach((x, index) => {
           const positionIndex = positionToIndex({x, y: potentialPositions.yValues[index]});
           const previousCount = tileCounts.get(positionIndex) || 0;

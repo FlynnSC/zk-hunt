@@ -108,38 +108,19 @@ contract AttackSystem is System, HitTileOffsetListDefinitions {
       }
     }
 
-    createHitTiles(hitTilesEntity, hitTilesXValues, hitTilesYValues, potentialHitExists);
-  }
-
-  // Logic split out into separate function to avoid stack too deep error
-  function createHitTiles(
-    uint256 hitTilesEntity, 
-    uint8[] memory xValues, 
-    uint8[] memory yValues, 
-    bool potentialHitExists
-  ) private {
     if (potentialHitExists) {
       hitTilesComponent.set(hitTilesEntity, HitTileSet({
-        xValues: xValues,
-        yValues: yValues,
-        merkleRoot: poseidonSystem.poseidon2(
-          poseidonSystem.poseidon2(
-            poseidonSystem.poseidon2(xValues[0], yValues[0]), 
-            poseidonSystem.poseidon2(xValues[1], yValues[1])
-          ),
-          poseidonSystem.poseidon2(
-            poseidonSystem.poseidon2(xValues[2], yValues[2]), 
-            poseidonSystem.poseidon2(xValues[3], yValues[3])
-          )
-        )
+        xValues: hitTilesXValues,
+        yValues: hitTilesYValues,
+        merkleChainRoot: poseidonSystem.coordsPoseidonChainRoot(hitTilesXValues, hitTilesYValues)
       }));
     } else {
       // Creates hit tiles and immediately removes them if there are no potential hits, so that the
       // tiles can show up on clients but then immediately expire after 1 second
       hitTilesComponent.set(hitTilesEntity, HitTileSet({
-        xValues: xValues, 
-        yValues: yValues, 
-        merkleRoot: 0
+        xValues: hitTilesXValues,
+        yValues: hitTilesYValues,
+        merkleChainRoot: 0
       }));
       hitTilesComponent.remove(hitTilesEntity);
     }
