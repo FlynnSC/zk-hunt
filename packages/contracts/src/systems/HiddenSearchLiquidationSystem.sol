@@ -20,7 +20,7 @@ contract HiddenSearchLiquidationSystem is System {
 
   uint256 constant fieldElemMask = (1 << 253) - 1;
   uint256 constant responsePeriod = 10; // Seconds since challenge creation
-  uint256 constant challengePeriod = 10;
+  uint256 constant liquidationPeriod = 10; // Seconds after the end of the response period
 
   constructor(
     IWorld _world, 
@@ -59,7 +59,7 @@ contract HiddenSearchLiquidationSystem is System {
     );
 
     require(
-      block.timestamp < hiddenChallenge.creationTimestamp + responsePeriod + challengePeriod,
+      block.timestamp < hiddenChallenge.creationTimestamp + responsePeriod + liquidationPeriod,
       "Challenge period has elapsed"
     );
 

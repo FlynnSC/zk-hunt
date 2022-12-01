@@ -434,6 +434,8 @@ export function createSearchSystem(network: NetworkLayer, phaser: PhaserLayer) {
     }
   };
 
+  // TODO a hidden search should reveal the challenger's position to the responder
+
   // Handles the search response when a new pending challenge is registered, as well
   // as resolving pending challenge tiles if all pending challenges for the challenge tiles entity
   // are removed. Also listens for pending challenges being removed, to see if the corresponding
@@ -465,7 +467,7 @@ export function createSearchSystem(network: NetworkLayer, phaser: PhaserLayer) {
               searchResponseValues.encryptionNonce, proofData
             );
           });
-        }, 0);
+        }, 10); // 10 ms, just in case
       }
     } else if (!hasComponent(Dead, entity)) {
       // If the pending challenge has been removed as a result of the entity dying, don't attempt to

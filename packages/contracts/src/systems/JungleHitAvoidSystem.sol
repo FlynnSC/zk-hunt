@@ -46,12 +46,11 @@ contract JungleHitAvoidSystem is System {
     uint256 hitTilesEntity,
     uint256[8] memory proofData
   ) public returns (bytes memory) {
-    uint256 hitTilesMerkleRoot = hitTilesComponent.getValue(hitTilesEntity).merkleChainRoot;
+    uint256 hitTilesMerkleChainRoot = hitTilesComponent.getValue(hitTilesEntity).merkleChainRoot;
+    uint256 positionCommitment = positionCommitmentComponent.getValue(entity);
+    
     require(
-      jungleHitAvoidVerifier.verifyProof(
-        proofData, 
-        [hitTilesMerkleRoot, positionCommitmentComponent.getValue(entity)]
-      ),
+      jungleHitAvoidVerifier.verifyProof(proofData, [hitTilesMerkleChainRoot, positionCommitment]),
       "Invalid proof"
     );
 

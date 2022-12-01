@@ -7,6 +7,11 @@ include "./utils/merkleDataAccess.circom";
 
 // Assumes 8 bit values for x and y coords
 
+// TODO make CompSmallConstant template for greater than checks, and refactor all logic that uses 
+// range checks to use it (and IntegerDivision broo (take out its hard-coded logic for this))
+
+// TODO Compare the diff to 1 and p - 1 here rather than using AbsDiff
+
 // Returns the absolute difference between `a` and `b`
 template AbsDiff() {
     signal input a;

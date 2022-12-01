@@ -6,7 +6,6 @@ include "./calcMerkleRoot.circom";
 include "./calculateTotal.circom";
 include "./isEqualToAny.circom";
 
-// TODO need to audit this shit bruhhhhhhhhhh
 template IntegerDivision(divisor) {
     signal input in;
 
@@ -17,17 +16,14 @@ template IntegerDivision(divisor) {
     remainder <-- in % divisor;
     in === quotient * divisor + remainder;
 
-    // TODO need to properly audit the below (especially whether lessThan 
-    // works correctly here, and is enough (need greaterThan check too?))
-    //
-    // Explanation: Bruhhhhhh
-    component lessThan = LessThan(252); // 252 max for circuit
-    
-    // Maybe this works??? Maybe need greaterThan also??? 
-    // Maybe also check that the remainder is less than divisor??
-    lessThan.in[0] <== in - quotient * divisor;
-    lessThan.in[1] <== divisor;
-    lessThan.out === 1;
+    // Checks that remainder is less than the divisor
+    component isEqualToAny = IsEqualToAny(divisor);
+    isEqualToAny.value <== remainder;
+    for (var i = 0; i < divisor; i++) {
+        isEqualToAny.equalTo[i] <== i;
+    }
+
+    isEqualToAny.out === 1;
 }
 
 // Selects the value of the bit at position `index` within `selectFrom`

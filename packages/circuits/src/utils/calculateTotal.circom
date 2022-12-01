@@ -6,12 +6,10 @@ template CalculateTotal(count) {
     signal input in[count];
     signal output out;
 
-    signal sums[count];
-    sums[0] <== in[0];
-
-    for (var i = 1; i < count; i++) {
-        sums[i] <== sums[i - 1] + in[i];
+    var sum = 0;
+    for (var i = 0; i < count; i++) {
+        sum += in[i];
     }
 
-    out <== sums[count - 1];
+    out <== sum;
 }
