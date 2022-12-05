@@ -103,7 +103,6 @@ export function registerControlPanel() {
         updateComponent(Config, getGodIndexStrict(world), {ignoreHiddenChallenge: !ignoreHiddenChallenge})
       };
 
-      console.log('control panel rendered');
       return (
         <Container>
           <div>

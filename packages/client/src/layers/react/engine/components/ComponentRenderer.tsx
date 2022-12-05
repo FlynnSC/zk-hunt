@@ -1,12 +1,12 @@
-import React from "react";
-import { observer } from "mobx-react-lite";
-import { useLayers, useEngineStore } from "../hooks";
-import { filterNullishValues } from "@latticexyz/utils";
-import { Cell } from "./Cell";
-import styled from "styled-components";
-import { GridConfiguration, UIComponent } from "../types";
-import { useStream } from "@latticexyz/std-client";
-import { Layers } from "../../../../types";
+import React, {useEffect, useState} from 'react';
+import {observer} from 'mobx-react-lite';
+import {useEngineStore, useLayers} from '../hooks';
+import {filterNullishValues} from '@latticexyz/utils';
+import {Cell} from './Cell';
+import styled from 'styled-components';
+import {GridConfiguration, UIComponent} from '../types';
+import {useStream} from '@latticexyz/std-client';
+import {Layers} from '../../../../types';
 
 const UIGrid = styled.div`
   display: grid;
@@ -54,7 +54,18 @@ export const UIComponentRenderer: React.FC<{ layers: Layers; id: string; uiCompo
 export const ComponentRenderer: React.FC = observer(() => {
   const { UIComponents } = useEngineStore();
   const layers = useLayers();
-  if (!layers) return null;
+
+  const [show, setShow] = useState(true);
+
+  useEffect(() => {
+    addEventListener('keydown', e => {
+      if (e.key === 'm') {
+        setShow(prevShow => !prevShow);
+      }
+    });
+  }, []);
+
+  if (!layers || !show) return null;
 
   return (
     <UIGrid>
