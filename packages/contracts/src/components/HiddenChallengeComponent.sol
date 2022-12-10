@@ -7,7 +7,7 @@ uint256 constant ID = uint256(keccak256("zkhunt.component.HiddenChallenge"));
 struct HiddenChallenge {
   uint256[] cipherText;
   uint256 encryptionNonce;
-  address challenger;
+  uint256 challengerEntity;
   uint256 creationTimestamp;
 }
 
@@ -25,8 +25,8 @@ contract HiddenChallengeComponent is Component {
     keys[1] = "encryptionNonce";
     values[1] = LibTypes.SchemaValue.UINT256;
 
-    keys[2] = "challenger";
-    values[2] = LibTypes.SchemaValue.ADDRESS;
+    keys[2] = "challengerEntity";
+    values[2] = LibTypes.SchemaValue.UINT256;
 
     keys[3] = "creationTimestamp";
     values[3] = LibTypes.SchemaValue.UINT256;
@@ -37,14 +37,14 @@ contract HiddenChallengeComponent is Component {
     // set(entity, abi.encode(value));
     set(
       entity, 
-      abi.encode(value.cipherText, value.encryptionNonce, value.challenger, value.creationTimestamp)
+      abi.encode(value.cipherText, value.encryptionNonce, value.challengerEntity, value.creationTimestamp)
     );
   }
 
   function getValue(uint256 entity) public view returns (HiddenChallenge memory) {
     // return abi.decode(getRawValue(entity), (HiddenChallenge));
-    (uint256[] memory cipherText, uint256 encryptionNonce, address challenger, 
-      uint256 creationTimestamp) = abi.decode(getRawValue(entity), (uint256[], uint256, address, uint256));
-    return HiddenChallenge(cipherText, encryptionNonce, challenger, creationTimestamp);
+    (uint256[] memory cipherText, uint256 encryptionNonce, uint256 challengerEntity, 
+      uint256 creationTimestamp) = abi.decode(getRawValue(entity), (uint256[], uint256, uint256, uint256));
+    return HiddenChallenge(cipherText, encryptionNonce, challengerEntity, creationTimestamp);
   }
 }

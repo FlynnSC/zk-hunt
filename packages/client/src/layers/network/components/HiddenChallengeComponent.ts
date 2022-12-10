@@ -6,7 +6,7 @@ export function defineHiddenChallengeComponent(world: World) {
     {
       cipherText: Type.StringArray,
       encryptionNonce: Type.String,
-      challenger: Type.String,
+      challengerEntity: Type.String,
       creationTimestamp: Type.String,
     },
     {

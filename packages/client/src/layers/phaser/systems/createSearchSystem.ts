@@ -18,7 +18,7 @@ import {createEntity, getEntityWithComponentValue, getGodIndexStrict} from '../.
 import {getParsedMapData, isMapTileJungle} from '../../../utils/mapData';
 import {Coord} from '@latticexyz/utils';
 import {ComponentValueFromComponent, lastElementOf} from '../../../utils/misc';
-import {spearHitTileOffsetList} from '../../../utils/hitTiles';
+import {calcPositionFromChallengeTiles, spearHitTileOffsetList} from '../../../utils/hitTiles';
 import {Sprites} from '../constants';
 import {
   calculateSharedKey,
@@ -378,6 +378,14 @@ export function createSearchSystem(network: NetworkLayer, phaser: PhaserLayer) {
     };
   };
 
+  const updateRevealedEntityPosition = (entity: EntityIndex, position: Coord) => {
+    setComponent(LocalPosition, entity, position);
+    setComponent(LocalJungleMoveCount, entity, {value: 1});
+    setComponent(LastKnownPositions, entity, {
+      xValues: [position.x], yValues: [position.y]
+    });
+  };
+
   const attemptNonceDecryption = (challengedEntity: EntityIndex) => {
     const searchResult = getComponentValueStrict(SearchResult, challengedEntity);
     const publicKeyOwner = getComponentValueStrict(ControlledBy, challengedEntity).value;
@@ -413,11 +421,7 @@ export function createSearchSystem(network: NetworkLayer, phaser: PhaserLayer) {
 
       if (entityPosition) {
         challengeDismissed = true;
-        setComponent(LocalPosition, challengedEntity, entityPosition);
-        setComponent(LocalJungleMoveCount, challengedEntity, {value: 1});
-        setComponent(LastKnownPositions, challengedEntity, {
-          xValues: [entityPosition.x], yValues: [entityPosition.y]
-        });
+        updateRevealedEntityPosition(challengedEntity, entityPosition);
       } else {
         console.error('Decrypted nonce didn\'t match any of the unit\'s potential positions');
       }
@@ -488,12 +492,17 @@ export function createSearchSystem(network: NetworkLayer, phaser: PhaserLayer) {
   // local player is able to decrypt
   defineComponentSystem(world, HiddenChallenge, ({value}) => {
     const hiddenChallenge = value[0];
+    if (!hiddenChallenge) return;
 
     // Ignore if the challenge was submitted by the local player
-    const challengerAddress = hiddenChallenge?.challenger?.toLowerCase();
+    const challengerEntityID = hiddenChallenge.challengerEntity as EntityID;
+    const challengerEntity = world.getEntityIndexStrict(challengerEntityID);
+    const challengerLocallyControlled = challengerEntityID && hasComponent(
+      LocallyControlled, challengerEntity
+    );
     const godIndex = getGodIndexStrict(world);
     const ignoreHiddenChallenge = getComponentValue(Config, godIndex)?.ignoreHiddenChallenge;
-    if (!hiddenChallenge || challengerAddress === getConnectedAddress() || ignoreHiddenChallenge) {
+    if (challengerLocallyControlled || ignoreHiddenChallenge) {
       return;
     }
 
@@ -506,7 +515,8 @@ export function createSearchSystem(network: NetworkLayer, phaser: PhaserLayer) {
     // Decryption and response logic put into a timeout to ensure that the private key has been
     // hydrated from storage before trying to calculate the shared key
     setTimeout(() => {
-      const sharedKey = calculateSharedKey(PrivateKey, PublicKey, hiddenChallenge.challenger);
+      const challengerAddress = getComponentValueStrict(ControlledBy, challengerEntity).value;
+      const sharedKey = calculateSharedKey(PrivateKey, PublicKey, challengerAddress);
       const message = poseidonDecrypt(
         hiddenChallenge.cipherText,
         sharedKey,
@@ -521,6 +531,11 @@ export function createSearchSystem(network: NetworkLayer, phaser: PhaserLayer) {
         xValues: message.slice(0, 4).map(Number),
         yValues: message.slice(4, 8).map(Number),
       };
+
+      // Calculates the challenger's position based on the challenge tiles
+      const challengerPosition = calcPositionFromChallengeTiles(challengeTiles);
+      updateRevealedEntityPosition(challengerEntity, challengerPosition);
+
       const challengedEntityFieldElem = message[8];
       const challengedEntityID = world.entities.find(
         entityID => entityToFieldElem(entityID) === challengedEntityFieldElem
@@ -536,7 +551,7 @@ export function createSearchSystem(network: NetworkLayer, phaser: PhaserLayer) {
       // owned by them
       if (challengedEntity !== undefined && hasComponent(LocallyControlled, challengedEntity)) {
         const searchResponseValues = getSearchResponseValues(
-          challengedEntity, hiddenChallenge.challenger, challengeTiles
+          challengedEntity, challengerAddress, challengeTiles
         );
 
         const [challengeTilesEntity] = createEntity(world);

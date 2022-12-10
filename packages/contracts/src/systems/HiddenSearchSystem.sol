@@ -71,7 +71,7 @@ contract HiddenSearchSystem is System {
 
     hiddenChallengeComponent.set(
       hiddenChallengeEntity,
-      HiddenChallenge(cipherText, encryptionNonce, msg.sender, block.timestamp)
+      HiddenChallenge(cipherText, encryptionNonce, entity, block.timestamp)
     );    
   }
 }

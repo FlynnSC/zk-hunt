@@ -7,6 +7,7 @@ import {PhaserLayer} from '../layers/phaser';
 import {getGodIndexStrict} from './entity';
 // @ts-ignore
 import {buildPoseidon} from 'circomlibjs';
+import {spearHitTileOffsetList} from './hitTiles';
 
 interface PoseidonFnType {
   (inputs: (number | bigint)[]): Uint8Array;
@@ -44,8 +45,11 @@ export function entityToFieldElem(entity: EntityID) {
 }
 
 export function testThing() {
-  const nullifier = poseidonChainRoot([...[1, 2, 3, 4], ...[5, 6, 7, 8], 9, 11, 12]);
-  console.log(nullifier);
+  let str = '';
+  spearHitTileOffsetList.forEach(offsets => {
+    str += `${poseidonChainRoot(offsets.flat().map(offsetToFieldElem)).toString()},\n`;
+  });
+  console.log(str);
 }
 
 export function toBigInt(val: any) {
