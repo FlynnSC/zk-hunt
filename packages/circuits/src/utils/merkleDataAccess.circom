@@ -3,8 +3,9 @@ pragma circom 2.1.2;
 include "../../../../node_modules/circomlib/circuits/bitify.circom";
 include "../../../../node_modules/circomlib/circuits/comparators.circom";
 include "./calcMerkleRoot.circom";
-include "./calculateTotal.circom";
+include "./calcSum.circom";
 include "./isEqualToAny.circom";
+include "./selectIndex.circom";
 
 template IntegerDivision(divisor) {
     signal input in;
@@ -14,7 +15,7 @@ template IntegerDivision(divisor) {
 
     quotient <-- in \ divisor;
     remainder <-- in % divisor;
-    in === quotient * divisor + remainder;
+    quotient * divisor + remainder === in;
 
     // Checks that remainder is less than the divisor
     component isEqualToAny = IsEqualToAny(divisor);
@@ -24,32 +25,6 @@ template IntegerDivision(divisor) {
     }
 
     isEqualToAny.out === 1;
-}
-
-// Selects the value of the bit at position `index` within `selectFrom`
-template SelectBit() {
-    signal input selectFrom;
-    signal input index;
-
-    signal output out;
-
-    // Only 253 'useful' bits in a field element
-    var usefulBits = 253;
-
-    component num2Bits = Num2Bits(usefulBits);
-    num2Bits.in <== selectFrom;
-    component calculateTotal = CalculateTotal(usefulBits);
-    component isEquals[usefulBits];
-
-    for (var i = 0; i < usefulBits; i++) {
-        isEquals[i] = IsEqual();
-        isEquals[i].in[0] <== index;
-        isEquals[i].in[1] <== i;
-
-        calculateTotal.in[i] <== num2Bits.out[i] * isEquals[i].out;
-    }
-
-    out <== calculateTotal.out;
 }
 
 // A merkle tree where every leaf is a field element, and each leaf contains
@@ -68,26 +43,19 @@ template MerkleDataAccess(merkleTreeDepth, bitsPerSegment) {
     var segmentsPerLeaf = 253 \ bitsPerSegment;
     assert(bitsPerSegment <= 253);  
 
-    component integerDivision = IntegerDivision(segmentsPerLeaf);
-    integerDivision.in <== segmentIndex;
-    signal leafIndex <== integerDivision.quotient;
-
-    // The local index of the segment within the leaf
-    signal localSegmentIndex <== integerDivision.remainder;
+    // First is the index of the leaf, second is the local index of the segment within the leaf
+    signal leafIndex, localSegmentIndex;
+    (leafIndex, localSegmentIndex) <== IntegerDivision(segmentsPerLeaf)(segmentIndex);
 
     // Checks the supplied dataLeaf and merkleSiblings against the merkleRoot
-    component calcMerkleRootFromPath = CalcMerkleRootFromPath(merkleTreeDepth);
-    calcMerkleRootFromPath.leaf <== dataLeaf;
-    calcMerkleRootFromPath.leafIndex <== leafIndex;
-    for (var i = 0; i < merkleTreeDepth; i++) {
-        calcMerkleRootFromPath.merkleSiblings[i] <== merkleSiblings[i];
-    }
-    calcMerkleRootFromPath.out === merkleRoot;
+    signal calculatedMerkleRoot <== CalcMerkleRootFromPath(merkleTreeDepth)(
+        dataLeaf, leafIndex, merkleSiblings
+    );
+    calculatedMerkleRoot === merkleRoot;
 
     var usefulBitCount = bitsPerSegment * segmentsPerLeaf;
-    component dataSum = CalculateTotal(usefulBitCount);
-    component leafBits = Num2Bits(usefulBitCount);
-    leafBits.in <== dataLeaf;
+    component dataSum = CalcSum(usefulBitCount);
+    signal leafBits <== Num2Bits(usefulBitCount)(dataLeaf);
 
     component isEqualToAnys[usefulBitCount];
     for (var bitIndex = 0; bitIndex < usefulBitCount; bitIndex++) {
@@ -102,7 +70,7 @@ template MerkleDataAccess(merkleTreeDepth, bitsPerSegment) {
         // integer value of the segment, converted from binary 
         var powerOfTwo = 2 ** (bitIndex % bitsPerSegment);
         isEqualToAnys[bitIndex].value <== bitIndex;
-        var bitValue = powerOfTwo * leafBits.out[bitIndex];
+        var bitValue = powerOfTwo * leafBits[bitIndex];
         dataSum.in[bitIndex] <== bitValue * isEqualToAnys[bitIndex].out;
     }
 
@@ -122,25 +90,15 @@ template MerkleDataBitAccess(merkleTreeDepth) {
     // Field element can only fit 253 'useful' bits
     var bitsPerLeaf = 253;
 
-    component integerDivision = IntegerDivision(bitsPerLeaf);
-    integerDivision.in <== bitIndex;
-    signal leafIndex <== integerDivision.quotient;
-
-    // The local index of the bit within the leaf
-    signal localBitIndex <== integerDivision.remainder;
+    // First is the index of the leaf, second is the local index of the bit within the leaf
+    signal leafIndex, localBitIndex;
+    (leafIndex, localBitIndex) <== IntegerDivision(bitsPerLeaf)(bitIndex);
 
     // Checks the supplied dataLeaf and merkleSiblings against the merkleRoot
-    component calcMerkleRootFromPath = CalcMerkleRootFromPath(merkleTreeDepth);
-    calcMerkleRootFromPath.leaf <== dataLeaf;
-    calcMerkleRootFromPath.leafIndex <== leafIndex;
-    for (var i = 0; i < merkleTreeDepth; i++) {
-        calcMerkleRootFromPath.merkleSiblings[i] <== merkleSiblings[i];
-    }
-    calcMerkleRootFromPath.out === merkleRoot;
+    signal calculatedMerkleRoot <== CalcMerkleRootFromPath(merkleTreeDepth)(
+        dataLeaf, leafIndex, merkleSiblings
+    );
+    calculatedMerkleRoot === merkleRoot;
 
-    component selectBit = SelectBit();
-    selectBit.selectFrom <== dataLeaf;
-    selectBit.index <== localBitIndex;
-
-    out <== selectBit.out;
+    out <== SelectIndex(bitsPerLeaf)(Num2Bits(bitsPerLeaf)(dataLeaf), localBitIndex);
 }

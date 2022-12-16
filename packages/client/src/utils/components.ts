@@ -7,7 +7,7 @@ export function defineStringArrayComponent<M extends Metadata>(
   return defineComponent(
     world,
     {
-      value: Type.StringArray,
+      value: Type.StringArray
     },
     options
   );
@@ -21,7 +21,7 @@ export function defineCoordArrayComponent<M extends Metadata>(
     world,
     {
       xValues: Type.NumberArray,
-      yValues: Type.NumberArray,
+      yValues: Type.NumberArray
     },
     options
   );
@@ -34,7 +34,7 @@ export function defineNumberArrayComponent<M extends Metadata>(
   return defineComponent(
     world,
     {
-      value: Type.NumberArray,
+      value: Type.NumberArray
     },
     options
   );
@@ -47,7 +47,7 @@ export function defineEntityIndexComponent<M extends Metadata>(
   return defineComponent(
     world,
     {
-      value: Type.Number,
+      value: Type.Number
     },
     options
   );

@@ -56,22 +56,13 @@ contract RevealPotentialPositionsSystem is System {
     PotentialPositions memory potentialPositions, 
     uint256[8] memory proofData
   ) public returns (bytes memory) {
-    uint256 potentialPositionsMerkleRoot = poseidonSystem.poseidon2(
-      poseidonSystem.poseidon2(
-        poseidonSystem.poseidon2(potentialPositions.xValues[0], potentialPositions.yValues[0]), 
-        poseidonSystem.poseidon2(potentialPositions.xValues[1], potentialPositions.yValues[1])
-      ),
-      poseidonSystem.poseidon2(
-        poseidonSystem.poseidon2(potentialPositions.xValues[2], potentialPositions.yValues[2]), 
-        poseidonSystem.poseidon2(potentialPositions.xValues[3], potentialPositions.yValues[3])
-      )
-    );
-
     require(
       potentialPositionsRevealVerifier.verifyProof(
         proofData, 
         [
-          potentialPositionsMerkleRoot,
+          poseidonSystem.coordsPoseidonChainRoot(
+            potentialPositions.xValues, potentialPositions.yValues
+          ),
           positionCommitmentComponent.getValue(entity)
         ]
       ),

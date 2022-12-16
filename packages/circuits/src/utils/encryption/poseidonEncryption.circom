@@ -1,3 +1,5 @@
+// TODO improve and properly attribute this
+
 /*
     Poseidon adapted for ECDH symmetric encryption
     Largely copied from @kohweijie's https://github.com/iden3/circomlib/pull/60
@@ -7,7 +9,7 @@
 
 pragma circom 2.1.2;
 
-include "../calculateTotal.circom";
+include "../calcSum.circom";
 include "poseidon_constants.circom";
 include "../../../../../node_modules/circomlib/circuits/comparators.circom";
 include "../../../../../node_modules/circomlib/circuits/poseidon.circom";
@@ -109,7 +111,7 @@ template PoseidonEncryptCheck(l) {
         pd.ciphertext[i] <== ciphertext[i];
     }
     
-    component calcTotal = CalculateTotal(l);
+    component calcTotal = CalcSum(l);
     component eqs[l];
 
     for (var i = 0; i < l; i++) {

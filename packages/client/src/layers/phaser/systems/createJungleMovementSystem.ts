@@ -11,7 +11,7 @@ import {
   runQuery,
   setComponent
 } from '@latticexyz/recs';
-import {getParsedMapData, isMapTileJungle} from '../../../utils/mapData';
+import {isMapTileJungle} from '../../../utils/mapData';
 import {Coord} from '@latticexyz/utils';
 import {Tileset} from '../assets/tilesets/overworldTileset';
 import {setPersistedComponent} from '../../../utils/persistedComponent';
@@ -20,15 +20,15 @@ import {indexToPosition, positionToIndex} from '../../../utils/coords';
 export function createJungleMovementSystem(network: NetworkLayer, phaser: PhaserLayer) {
   const {
     world,
-    components: {MapData, JungleMoveCount, RevealedPotentialPositions},
+    components: {JungleMoveCount, RevealedPotentialPositions}
   } = network;
 
   const {
     scenes: {Main: {maps: {MainMap}}},
     components: {
       LocalPosition, MovePath, PotentialPositions, LocallyControlled, LocalJungleMoveCount,
-      LastKnownPositions
-    },
+      LastKnownPositions, ParsedMapData
+    }
   } = phaser;
 
   const updatePotentialPositions = (entity: EntityIndex) => {
@@ -39,7 +39,6 @@ export function createJungleMovementSystem(network: NetworkLayer, phaser: Phaser
     let currEdgePositions = [...potentialPositions];
     let newEdgePositions: Coord[] = [];
     const seenPositionIndices = new Set(currEdgePositions.map(positionToIndex));
-    const parsedMapData = getParsedMapData(MapData);
     const checkOffsets = [[-1, 0], [1, 0], [0, -1], [0, 1]];
     const moveCount = getComponentValue(LocalJungleMoveCount, entity)?.value ?? 0;
 
@@ -50,7 +49,7 @@ export function createJungleMovementSystem(network: NetworkLayer, phaser: Phaser
           ([offsetX, offsetY]) => ({x: currPosition.x + offsetX, y: currPosition.y + offsetY})
         ).forEach(newPosition => {
           const positionIndex = positionToIndex(newPosition);
-          if (!seenPositionIndices.has(positionIndex) && isMapTileJungle(parsedMapData, newPosition)) {
+          if (!seenPositionIndices.has(positionIndex) && isMapTileJungle(ParsedMapData, newPosition)) {
             potentialPositions.push(newPosition);
             newEdgePositions.push(newPosition);
             seenPositionIndices.add(positionIndex);
@@ -135,7 +134,7 @@ export function createJungleMovementSystem(network: NetworkLayer, phaser: Phaser
   });
 
   // Updates the total potential positions overlay
-  defineComponentSystem(world, PotentialPositions, ({entity, value}) => {
+  defineComponentSystem(world, PotentialPositions, ({value}) => {
     // Ensures that if there are fewer potential positions than the last render, the removed ones
     // are cleared
     const oldPotentialPositions = value[1];

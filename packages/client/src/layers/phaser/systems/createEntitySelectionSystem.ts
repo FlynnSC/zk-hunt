@@ -19,12 +19,13 @@ import {Sprites, TILE_HEIGHT, TILE_WIDTH} from '../constants';
 import {coordsEq, isPositionWithinMapBounds} from '../../../utils/coords';
 import {deselectEntity, getSelectedEntity, selectEntity} from '../components/SelectedComponent';
 import {getIndexFromSet} from '../../../utils/misc';
-import {getGodIndex, getGodIndexStrict} from '../../../utils/entity';
+import {getGodIndex} from '../../../utils/entity';
 import {drawTileSprite} from '../../../utils/drawing';
+import {getSingletonComponentValue, setSingletonComponent} from '../../../utils/singletonComponent';
 
 export function createEntitySelectionSystem(network: NetworkLayer, phaser: PhaserLayer) {
   const {
-    components: {Dead, Position},
+    components: {Dead, Position}
   } = network;
 
   const {
@@ -40,9 +41,8 @@ export function createEntitySelectionSystem(network: NetworkLayer, phaser: Phase
 
   // Updates the stored cursor (tile) position
   input.pointermove$.subscribe(e => {
-    const godIndex = getGodIndex(world);
-    if (godIndex !== undefined) {
-      const oldCursorPosition = getComponentValue(CursorTilePosition, godIndex);
+    if (getGodIndex(world) !== undefined) {
+      const oldCursorPosition = getSingletonComponentValue(CursorTilePosition);
       const newCursorPosition = pixelCoordToTileCoord(
         {x: e.pointer.worldX, y: e.pointer.worldY}, TILE_WIDTH, TILE_HEIGHT
       );
@@ -50,7 +50,7 @@ export function createEntitySelectionSystem(network: NetworkLayer, phaser: Phase
         isPositionWithinMapBounds(newCursorPosition) &&
         !coordsEq(newCursorPosition, oldCursorPosition)
       ) {
-        setComponent(CursorTilePosition, godIndex, newCursorPosition);
+        setSingletonComponent(CursorTilePosition, newCursorPosition);
       }
     }
   });
@@ -65,7 +65,7 @@ export function createEntitySelectionSystem(network: NetworkLayer, phaser: Phase
 
   // Handles entity selection with left click
   input.click$.subscribe(() => {
-    const cursorPosition = getComponentValue(CursorTilePosition, getGodIndexStrict(world));
+    const cursorPosition = getSingletonComponentValue(CursorTilePosition);
     if (cursorPosition) {
       const clickedEntities = runQuery(
         [Has(LocallyControlled), HasValue(LocalPosition, cursorPosition)]
@@ -135,7 +135,7 @@ export function createEntitySelectionSystem(network: NetworkLayer, phaser: Phase
   const keyCodeToComponent: Record<string, Component<{value: Type.Boolean}>> = {
     69: PrimingMove, // E
     87: PrimingAttack, // W
-    81: PrimingSearch, // Q
+    81: PrimingSearch // Q
   };
 
 
@@ -158,7 +158,7 @@ export function createEntitySelectionSystem(network: NetworkLayer, phaser: Phase
   const keyCodeToKey: Record<string, string> = {
     69: 'E',
     87: 'W',
-    81: 'Q',
+    81: 'Q'
   };
 
   // Handles updating the PrimingX components when the selected entity changes

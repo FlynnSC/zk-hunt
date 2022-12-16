@@ -51,7 +51,7 @@ type JungleMoveProofInput = {
   mapDataMerkleSiblings: BigNumberish[];
   mapDataMerkleRoot: BigNumberish;
 };
-export const jungleMoveProver = createProver<JungleMoveProofInput>('jungleMoveV2');
+export const jungleMoveProver = createProver<JungleMoveProofInput>('jungleMove');
 
 type JungleHitAvoidProofInput = {
   x: number;

@@ -2,7 +2,7 @@ import React from 'react';
 import {registerUIComponent} from '../engine';
 import {of} from 'rxjs';
 import styled from 'styled-components';
-import {getComponentValue, getComponentValueStrict, hasComponent, updateComponent} from '@latticexyz/recs';
+import {getComponentValue, getComponentValueStrict, hasComponent} from '@latticexyz/recs';
 import {getSelectedEntity} from '../../phaser/components/SelectedComponent';
 import {random} from '@latticexyz/utils';
 import {positionToIndex} from '../../../utils/coords';
@@ -11,15 +11,20 @@ import {Keypair, PrivKey} from 'maci-domainobjs';
 import {getGodIndex, getGodIndexStrict} from '../../../utils/entity';
 import {setPersistedComponent} from '../../../utils/persistedComponent';
 import {testThing} from '../../../utils/secretSharing';
+import {
+  getSingletonComponentValueStrict,
+  hasSingletonComponent,
+  updateSingletonComponent
+} from '../../../utils/singletonComponent';
 
 export function registerControlPanel() {
   registerUIComponent(
-    "ControlPanel",
+    'ControlPanel',
     {
       colStart: 10,
       colEnd: 13,
       rowStart: 1,
-      rowEnd: 2,
+      rowEnd: 2
     },
     (layers) => of(layers),
     (layers) => {
@@ -30,20 +35,19 @@ export function registerControlPanel() {
           components: {JungleMoveCount, PositionCommitment}
         },
         phaser: {
-          components: {LocalPosition, PotentialPositions, Selected, Nonce, PrivateKey, Config},
+          components: {LocalPosition, PotentialPositions, Selected, Nonce, PrivateKey, Config}
         }
       } = layers;
 
       const onSpawn = () => {
-        const godIndex = getGodIndexStrict(world);
         let keyPair;
-        if (hasComponent(PrivateKey, godIndex)) {
-          const privateKey = BigInt(getComponentValueStrict(PrivateKey, godIndex).value);
+        if (hasSingletonComponent(PrivateKey)) {
+          const privateKey = BigInt(getSingletonComponentValueStrict(PrivateKey).value);
           keyPair = new Keypair(new PrivKey(privateKey));
         } else {
           keyPair = new Keypair();
           setPersistedComponent(
-            PrivateKey, godIndex, {value: keyPair.privKey.rawPrivKey.toString()}
+            PrivateKey, getGodIndexStrict(world), {value: keyPair.privKey.rawPrivKey.toString()}
           );
         }
         spawn(keyPair.pubKey.rawPubKey.map(val => val.valueOf()));
@@ -60,7 +64,7 @@ export function registerControlPanel() {
         const revealedPotentialPositions = {
           xValues: [entityPosition.x], yValues: [entityPosition.y]
         };
-        const seenPositionIndices = new Set([positionToIndex(entityPosition)])
+        const seenPositionIndices = new Set([positionToIndex(entityPosition)]);
 
         for (let i = 0; i < 3; ++i) {
           while (true) {
@@ -85,7 +89,7 @@ export function registerControlPanel() {
         potentialPositionsRevealProver({
           x: entityPosition.x, y: entityPosition.y, nonce, positionCommitment,
           potentialPositionsXValues: revealedPotentialPositions.xValues,
-          potentialPositionsYValues: revealedPotentialPositions.yValues,
+          potentialPositionsYValues: revealedPotentialPositions.yValues
         }).then(({proofData}) => {
           revealPotentialPositions(
             world.entities[selectedEntity],
@@ -100,7 +104,7 @@ export function registerControlPanel() {
         Config, godIndex
       )?.ignoreHiddenChallenge;
       const toggleIgnoreHiddenChallenge = () => {
-        updateComponent(Config, getGodIndexStrict(world), {ignoreHiddenChallenge: !ignoreHiddenChallenge})
+        updateSingletonComponent(Config, {ignoreHiddenChallenge: !ignoreHiddenChallenge});
       };
 
       return (

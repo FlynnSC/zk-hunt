@@ -1,4 +1,4 @@
-import {namespaceWorld, setComponent} from '@latticexyz/recs';
+import {namespaceWorld} from '@latticexyz/recs';
 import {createPhaserEngine} from '@latticexyz/phaserx';
 import {phaserConfig} from './config';
 import {NetworkLayer} from '../network';
@@ -22,7 +22,9 @@ import {defineCoordArrayComponent, defineEntityIndexComponent} from '../../utils
 import {createSearchSystem} from './systems/createSearchSystem';
 import {initPoseidon} from '../../utils/secretSharing';
 import {defineConfigComponent} from './components/ConfigComponent';
-import {getGodIndexStrict} from '../../utils/entity';
+import {getMapDataChunks} from '../../utils/mapData';
+import {defineParsedMapDataComponent} from './components/ParsedMapDataComponent';
+import {hasSingletonComponent, setSingletonComponent} from '../../utils/singletonComponent';
 
 /**
  * The Phaser layer is responsible for rendering game objects to the screen.
@@ -33,6 +35,7 @@ export async function createPhaserLayer(network: NetworkLayer) {
 
   // --- COMPONENTS -----------------------------------------------------------------
   const components = {
+    ParsedMapData: defineParsedMapDataComponent(world),
     LocalPosition: defineCoordComponent(world, {id: 'LocalPosition'}),
     PotentialPositions: defineCoordArrayComponent(world, {id: 'PotentialPositions'}),
     Nonce: defineNumberComponent(world, {id: 'Nonce'}),
@@ -64,13 +67,16 @@ export async function createPhaserLayer(network: NetworkLayer) {
       world,
       {id: 'PendingHiddenChallengeTilesEntity'}
     ),
-    Config: defineConfigComponent(world),
+    Config: defineConfigComponent(world)
   };
 
   initPoseidon();
   onStateSyncComplete(network, () => {
     restorePersistedComponents(components);
-    setComponent(components.Config, getGodIndexStrict(world), {ignoreHiddenChallenge: false});
+    setSingletonComponent(components.Config, {ignoreHiddenChallenge: false});
+    if (!hasSingletonComponent(network.components.MapData)) {
+      network.api.init(getMapDataChunks());
+    }
   });
 
   // --- PHASER ENGINE SETUP --------------------------------------------------------
@@ -83,7 +89,7 @@ export async function createPhaserLayer(network: NetworkLayer) {
     components,
     network,
     game,
-    scenes,
+    scenes
   };
 
   // --- SYSTEMS --------------------------------------------------------------------

@@ -38,9 +38,7 @@ export async function createNetworkLayer(config: GameConfig) {
     LoadingState: defineLoadingStateComponent(world),
     Position: defineCoordComponent(world, {
       id: 'Position',
-      metadata: {
-        contractId: 'zkhunt.component.Position',
-      },
+      metadata: {contractId: 'zkhunt.component.Position'}
     }),
     // TODO change this and mapData to components that can represent uint256
     PositionCommitment: defineStringComponent(world, {
@@ -59,7 +57,7 @@ export async function createNetworkLayer(config: GameConfig) {
     HitTiles: defineHitTilesComponent(world),
     PotentialHits: defineStringArrayComponent(world, {
       id: 'PotentialHits',
-      metadata: {contractId: 'zkhunt.component.PotentialHits'},
+      metadata: {contractId: 'zkhunt.component.PotentialHits'}
     }),
     Dead: defineBoolComponent(world, {
       id: 'Dead',
@@ -67,20 +65,20 @@ export async function createNetworkLayer(config: GameConfig) {
     }),
     RevealedPotentialPositions: defineCoordArrayComponent(world, {
       id: 'RevealedPotentialPositions',
-      metadata: {contractId: 'zkhunt.component.RevealedPotentialPositions'},
+      metadata: {contractId: 'zkhunt.component.RevealedPotentialPositions'}
     }),
     ChallengeTiles: defineChallengeTilesComponent(world),
     PendingChallenges: defineStringArrayComponent(world, {
       id: 'PendingChallenges',
-      metadata: {contractId: 'zkhunt.component.PendingChallenges'},
+      metadata: {contractId: 'zkhunt.component.PendingChallenges'}
     }),
     PublicKey: defineStringArrayComponent(world, {
       id: 'PublicKey',
-      metadata: {contractId: 'zkhunt.component.PublicKey'},
+      metadata: {contractId: 'zkhunt.component.PublicKey'}
     }),
     SearchResult: defineSearchResultComponent(world),
     HiddenChallenge: defineHiddenChallengeComponent(world),
-    NullifierQueue: defineNullifierQueueComponent(world),
+    NullifierQueue: defineNullifierQueueComponent(world)
   };
 
   // --- SETUP ----------------------------------------------------------------------
@@ -91,6 +89,10 @@ export async function createNetworkLayer(config: GameConfig) {
   const actions = createActionSystem(world, txReduced$);
 
   // --- API ------------------------------------------------------------------------
+  function init(mapDataChunks: BigNumberish[]) {
+    systems['zkhunt.system.Init'].executeTyped(mapDataChunks);
+  }
+
   function spawn(publicKey: BigNumberish[]) {
     return systems['zkhunt.system.Spawn'].executeTyped(publicKey);
   }
@@ -164,11 +166,11 @@ export async function createNetworkLayer(config: GameConfig) {
     network,
     actions,
     api: {
-      spawn, plainsMove, jungleEnter, jungleMove, jungleExit, attack, jungleAttack, jungleHitAvoid,
-      jungleHitReceive, revealPotentialPositions, search, searchRespond, hiddenSearch,
-      hiddenSearchRespond, hiddenSearchLiquidate
+      init, spawn, plainsMove, jungleEnter, jungleMove, jungleExit, attack, jungleAttack,
+      jungleHitAvoid, jungleHitReceive, revealPotentialPositions, search, searchRespond,
+      hiddenSearch, hiddenSearchRespond, hiddenSearchLiquidate
     },
-    dev: setupDevSystems(world, encoders, systems),
+    dev: setupDevSystems(world, encoders, systems)
   };
 
   return context;

@@ -2,8 +2,6 @@ pragma circom 2.1.2;
 
 include "../../../node_modules/circomlib/circuits/poseidon.circom";
 
-// TODO create a version of this in utils that can be used by all other circuits that perform the 
-// same operation
 // Outputs the commitment for the supplied public position and private nonce, where the commitment 
 // is checked in the contract
 template PositionCommitment() {
@@ -13,12 +11,7 @@ template PositionCommitment() {
 
     signal output out;
 
-    component poseidon = Poseidon(3);
-    poseidon.inputs[0] <== x;
-    poseidon.inputs[1] <== y;
-    poseidon.inputs[2] <== nonce;
-
-    out <== poseidon.out;
+    out <== Poseidon(3)([x, y, nonce]);
 }
 
 component main {public [x, y]} = PositionCommitment();

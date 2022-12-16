@@ -38,8 +38,7 @@ template CalcMerkleRootFromPath(merkleTreeDepth) {
 
     // When decomposing the leafIndex into bits, each bit tells you the order
     // that you need to hash the two current siblings as you ascend the tree 
-    component merklePathBits = Num2Bits(merkleTreeDepth);
-    merklePathBits.in <== leafIndex;
+    signal merklePathBits[merkleTreeDepth] <== Num2Bits(merkleTreeDepth)(leafIndex);
 
     component poseidons[merkleTreeDepth];
     component switchers[merkleTreeDepth];
@@ -51,7 +50,7 @@ template CalcMerkleRootFromPath(merkleTreeDepth) {
         else switchers[i].L <== poseidons[i - 1].out;
 
         switchers[i].R <== merkleSiblings[i];
-        switchers[i].sel <== merklePathBits.out[i];
+        switchers[i].sel <== merklePathBits[i];
 
         poseidons[i] = Poseidon(2);
         poseidons[i].inputs[0] <== switchers[i].outL;

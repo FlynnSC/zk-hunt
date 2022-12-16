@@ -13,8 +13,8 @@ import {
   updateComponent
 } from '@latticexyz/recs';
 import {lastElementOf, normalizedDiff} from '../../../utils/misc';
-import {getEntityWithComponentValue, getGodIndexStrict} from '../../../utils/entity';
-import {getMapTileMerkleData, getMapTileValue, getParsedMapData} from '../../../utils/mapData';
+import {getEntityWithComponentValue} from '../../../utils/entity';
+import {getMapTileMerkleData, getMapTileValue} from '../../../utils/mapData';
 import {TileType} from '../../../constants';
 import {setPersistedComponent} from '../../../utils/persistedComponent';
 import {jungleMoveProver, positionCommitmentProver} from '../../../utils/zkProving';
@@ -23,20 +23,20 @@ import {Sprites} from '../constants';
 import {angleTowardPosition, coordsEq} from '../../../utils/coords';
 import {Coord} from '@latticexyz/utils';
 import {getRandomNonce} from '../../../utils/random';
+import {getSingletonComponentValue} from '../../../utils/singletonComponent';
 
 export function createMovePathSystem(network: NetworkLayer, phaser: PhaserLayer) {
   const {
     world,
-    components: {MapData},
-    api: {plainsMove, jungleEnter, jungleMove, jungleExit},
+    api: {plainsMove, jungleEnter, jungleMove, jungleExit}
   } = network;
 
   const {
     scenes: {Main},
     components: {
-      CursorTilePosition, PotentialMovePath, MovePath, PendingMovePosition,
+      CursorTilePosition, PotentialMovePath, MovePath, PendingMovePosition, ParsedMapData,
       LocalPosition, Nonce, ActionSourcePosition, PrimingMove, LocallyControlled
-    },
+    }
   } = phaser;
 
   const {input, objectPool} = Main;
@@ -45,7 +45,7 @@ export function createMovePathSystem(network: NetworkLayer, phaser: PhaserLayer)
   // upon the unit
 
   const updatePotentialMovePath = (entity: EntityIndex, swapTraverseXFirst = false) => {
-    const cursorPosition = getComponentValue(CursorTilePosition, getGodIndexStrict(world));
+    const cursorPosition = getSingletonComponentValue(CursorTilePosition);
     if (!cursorPosition) return;
 
     // '!=' acts as XOR to flip value if swapTraverseXFirst is true
@@ -58,7 +58,7 @@ export function createMovePathSystem(network: NetworkLayer, phaser: PhaserLayer)
     const axisKeys: ('x' | 'y')[] = traverseXFirst ? ['x', 'y'] : ['y', 'x'];
     const prevPathPosition = continueFromPath && currMovePath?.xValues?.length ? {
       x: lastElementOf(currMovePath?.xValues as number[]),
-      y: lastElementOf(currMovePath?.yValues as number[]),
+      y: lastElementOf(currMovePath?.yValues as number[])
     } : {...getComponentValueStrict(ActionSourcePosition, entity)};
     axisKeys.forEach(axisKey => {
       const dir = normalizedDiff(prevPathPosition[axisKey], cursorPosition[axisKey]);
@@ -190,7 +190,7 @@ export function createMovePathSystem(network: NetworkLayer, phaser: PhaserLayer)
   // TODO this logic could probably do with some cleaning up, especially the connector rendering :P
   const drawPath = (
     entity: EntityIndex, id: string, currPath: PathType, prevPath: PathType, potential: boolean,
-    continueFromPath?: boolean,
+    continueFromPath?: boolean
   ) => {
     // Removes the prev path if it exists
     if (prevPath) {
@@ -283,9 +283,8 @@ export function createMovePathSystem(network: NetworkLayer, phaser: PhaserLayer)
 
     const oldPosition = getComponentValueStrict(LocalPosition, entityIndex);
     const newPosition = {x: movePath.xValues[0], y: movePath.yValues[0]};
-    const parsedMapData = getParsedMapData(MapData);
-    const oldTileType = getMapTileValue(parsedMapData, oldPosition);
-    const newTileType = getMapTileValue(parsedMapData, newPosition);
+    const oldTileType = getMapTileValue(ParsedMapData, oldPosition);
+    const newTileType = getMapTileValue(ParsedMapData, newPosition);
     const entityID = world.entities[entityIndex];
 
     if (oldTileType === TileType.PLAINS) {
@@ -307,7 +306,7 @@ export function createMovePathSystem(network: NetworkLayer, phaser: PhaserLayer)
       jungleMoveProver({
         oldX: oldPosition.x, oldY: oldPosition.y, oldNonce: nonce,
         newX: newPosition.x, newY: newPosition.y,
-        ...getMapTileMerkleData(parsedMapData, newPosition),
+        ...getMapTileMerkleData(ParsedMapData, newPosition)
       }).then(({proofData, publicSignals}) => {
         jungleMove(entityID, publicSignals[1], proofData);
         setPersistedComponent(Nonce, entityIndex, {value: nonce + 1});
@@ -354,7 +353,7 @@ export function createMovePathSystem(network: NetworkLayer, phaser: PhaserLayer)
       if (movePath.xValues.length > 1) {
         setComponent(MovePath, entity, {
           xValues: movePath.xValues.slice(1),
-          yValues: movePath.yValues.slice(1),
+          yValues: movePath.yValues.slice(1)
         });
       } else {
         removeComponent(MovePath, entity);

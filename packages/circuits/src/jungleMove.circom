@@ -2,127 +2,59 @@ pragma circom 2.1.2;
 
 include "../../../node_modules/circomlib/circuits/comparators.circom";
 include "../../../node_modules/circomlib/circuits/poseidon.circom";
-include "../../../node_modules/circomlib/circuits/bitify.circom";
+include "./utils/merkleDataAccess.circom";
+include "./utils/isEqualToAny.circom";
 
-// Assumes 8 bit values for x and y coords
-// Assumes 15 * 15 grid (225 bits)
+// TODO make CompSmallConstant template for greater than checks, and refactor all logic that uses 
+// range checks to use it (and IntegerDivision broo (take out its hard-coded logic for this))
 
-// Returns the absolute difference between `a` and `b`
-template AbsDiff() {
-    signal input a;
-    signal input b;
-
-    signal output out;
-
-    component lessThan = LessThan(8);
-    lessThan.in[0] <== a;
-    lessThan.in[1] <== b;
-    
-    signal inter1 <== lessThan.out * (b - a);
-    signal inter2 <== (1 - lessThan.out) * (a - b);
-    out <== inter1 + inter2;
-}
-
-// Ensures that the input value is either 0 or 1
-template EnsureIsBit() {
-    signal input in;
-
-    in * (in - 1) === 0;
-}
-
-// This circuit returns the sum of the inputs.
-// n must be greater than 0.
-// Taken from https://github.com/privacy-scaling-explorations/maci/blob/v1/circuits/circom/trees/calculateTotal.circom
-// TODO probably find way to not import this rather than including it directly
-template CalculateTotal(n) {
-    signal input nums[n];
-    signal output sum;
-
-    signal sums[n];
-    sums[0] <== nums[0];
-
-    for (var i=1; i < n; i++) {
-        sums[i] <== sums[i - 1] + nums[i];
-    }
-
-    sum <== sums[n - 1];
-}
-
-// Returns the value of the bit at position `index` in the binary 
-// representation of `value` (0 or 1)
-template BitCheck() {
-    signal input value;
-    signal input index;
+// Ensures that the absolute diff between old and new is 1 or 0, and returns whether it is 1. Also
+// ensures that the new value is within the map
+template CheckDiff(mapSize) {
+    signal input old;
+    signal input new;
 
     signal output out;
 
-    component num2Bits = Num2Bits(225);
-    num2Bits.in <== value;
+    signal diff <== old - new;
 
-    component isZero[225];
-    component calculateTotal = CalculateTotal(225);
+    out <== IsEqualToAny(2)(diff, [1, -1]);
 
-    for (var i = 0; i < 225; i++) {
-        isZero[i] = IsZero();
-        isZero[i].in <== index - i;
+    // Ensures that the absolute diff is 1 or 0 
+    signal isZero <== IsZero()(diff);
+    out + isZero === 1;
 
-        // If this is the correct index (i === index, isZero[i].out === 1), 
-        // then the value of the bit at this index is added to the total, 
-        // otherwise 0 is added regardless of the value of the bit
-        calculateTotal.nums[i] <== num2Bits.out[i] * isZero[i].out;
-    }
-
-    out <== calculateTotal.sum;
+    // Ensures that the new value is not outside the map
+    signal isOutsideMap <== IsEqualToAny(2)(new, [-1, mapSize]);
+    isOutsideMap === 0;
 }
 
-// Checks that move is valid (single cell orthogonal onto a jungle tile), and outputs
+// Checks that move is valid (single cell orthogonal onto a jungle tile within map), and outputs
 // the old and new commitments so that they can be checked for validity
-template JungleMove() {
-    signal input oldX;
-    signal input oldY;
-    signal input oldNonce;
-    signal input newX;
-    signal input newY;
-    signal input mapData;
+template JungleMove(mapSize, merkleTreeDepth) {
+    signal input oldX, oldY, oldNonce;
+    signal input newX, newY;
 
-    signal output oldCommit;
-    signal output newCommit;
+    // See MerkleDataBitAccess component for signal explanations
+    signal input mapDataMerkleLeaf, mapDataMerkleSiblings[merkleTreeDepth], mapDataMerkleRoot;
+
+    signal output oldCommit, newCommit;
     
-    // Check that movement is single cell orthogonal
-    // (probably need to worry about overflow? Also grid boundary checking) 
-    component absXDiff = AbsDiff();
-    absXDiff.a <== oldX;
-    absXDiff.b <== newX;
-
-    component absYDiff = AbsDiff();
-    absYDiff.a <== oldY;
-    absYDiff.b <== newY;
-
-    component ensureXIsBit = EnsureIsBit();
-    component ensureYIsBit = EnsureIsBit();
-    ensureXIsBit.in <== absXDiff.out;
-    ensureYIsBit.in <== absYDiff.out;
-    absXDiff.out + absYDiff.out === 1;
-
-    // Check commitments are correct
-    component poseidonOld = Poseidon(3);
-    component poseidonNew = Poseidon(3);
-
-    poseidonOld.inputs[0] <== oldX;
-    poseidonOld.inputs[1] <== oldY;
-    poseidonOld.inputs[2] <== oldNonce;
-    poseidonNew.inputs[0] <== newX;
-    poseidonNew.inputs[1] <== newY;
-    poseidonNew.inputs[2] <== oldNonce + 1;
-
-    oldCommit <== poseidonOld.out; // Why are the commits outputs in the df circuits (better performance with fewer public inputs?)
-    newCommit <== poseidonNew.out;
+    // Check that movement is single cell orthogonal, and stays within the map
+    signal xDiff <== CheckDiff(mapSize)(oldX, newX);
+    signal yDiff <== CheckDiff(mapSize)(oldY, newY);
+    xDiff + yDiff === 1;
 
     // Check that the new map cell is of type jungle (1)
-    component bitCheck = BitCheck();
-    bitCheck.value <== mapData;
-    bitCheck.index <== newX + 15 * newY; // Array index in flattened grid
-    bitCheck.out === 1;
+    signal bitIndex <== newX + newY * mapSize;
+    signal tileType <== MerkleDataBitAccess(merkleTreeDepth)(
+        bitIndex, mapDataMerkleLeaf, mapDataMerkleSiblings, mapDataMerkleRoot
+    );
+    tileType === 1;
+
+    // Check commitments are correct
+    oldCommit <== Poseidon(3)([oldX, oldY, oldNonce]);
+    newCommit <== Poseidon(3)([newX, newY, oldNonce + 1]);
 }
 
-component main {public [mapData]} = JungleMove();
+component main {public [mapDataMerkleRoot]} = JungleMove(31, 2);

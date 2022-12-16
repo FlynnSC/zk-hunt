@@ -4,6 +4,9 @@ include "utils/encryption/poseidonEncryption.circom";
 include "utils/encryption/calcSharedKey.circom";
 include "utils/calcChallengeTiles.circom";
 
+// TODO test the constraint count of all circuit refactors against the old versions, and figure out
+// why there are now more constraints?????
+
 // TODO maybe merklise the cipherText and pass in as private signal?
 
 // This circuit verifies the encryption of the challenge tiles and nullifier nonce that correspond
@@ -22,9 +25,7 @@ include "utils/calcChallengeTiles.circom";
 // from the presence of repeated nullifiers, and ensures that the responder has to respond to both 
 // of two identical challenges, rather than allowing them to just respond to the first and having 
 // the resulting nullifier satisfy the second challenge as well
-template HiddenSearch () {
-    var challengeTileCount = 4;
-
+template HiddenSearch(challengeTileCount) {
     // (x, y) for each tile + challengedEntity + nullifierNonce
     var messageSize = 2 * challengeTileCount + 2;
     var cipherTextSize = 13; // messageSize rounded up to the nearest multiple of 3, + 1
@@ -44,60 +45,38 @@ template HiddenSearch () {
     signal input challengerPublicKey[2];
     signal input cipherText[cipherTextSize];
 	signal input encryptionNonce; // Needed to encrypt/decrypt the challenge tiles
-
-    // Intermediate
-    signal sharedKey[2];
-    signal challengeTilesXValues[challengeTileCount];
-    signal challengeTilesYValues[challengeTileCount];
-
+    
     // Verifies that the supplied position matches the commitment
-    component p1 = Poseidon(3);
-    p1.inputs[0] <== x;
-    p1.inputs[1] <== y;
-    p1.inputs[2] <== positionCommitmentNonce;
-    p1.out === positionCommitment;
+    signal commitment <== Poseidon(3)([x, y, positionCommitmentNonce]);
+    commitment === positionCommitment;
 
     // Calculates the challenge tiles, and verifies the supplied offsets are valid
-    component calcChallengeTiles = CalcChallengeTiles();
-    calcChallengeTiles.x <== x;
-    calcChallengeTiles.y <== y;
-    calcChallengeTiles.challengeTilesOffsetsXValues <== challengeTilesOffsetsXValues;
-    calcChallengeTiles.challengeTilesOffsetsYValues <== challengeTilesOffsetsYValues;
-
-    challengeTilesXValues <== calcChallengeTiles.challengeTilesXValues;
-    challengeTilesYValues <== calcChallengeTiles.challengeTilesYValues;
+    signal challengeTilesXValues[challengeTileCount], challengeTilesYValues[challengeTileCount];
+    (challengeTilesXValues, challengeTilesYValues) <== CalcChallengeTiles()(
+        x, y, challengeTilesOffsetsXValues, challengeTilesOffsetsYValues
+    );
 
     // Generates the shared key, and checks that the supplied challengerPrivateKey matches the 
     // supplied challengerPublicKey
-    component calcSharedKey = CalcSharedKey();
-    calcSharedKey.senderPrivateKey <== challengerPrivateKey;
-    calcSharedKey.senderPublicKey[0] <== challengerPublicKey[0];
-    calcSharedKey.senderPublicKey[1] <== challengerPublicKey[1];
-    calcSharedKey.receiverPublicKey[0] <== responderPublicKey[0];
-    calcSharedKey.receiverPublicKey[1] <== responderPublicKey[1];
-    
-    sharedKey[0] <== calcSharedKey.out[0];
-    sharedKey[1] <== calcSharedKey.out[1];
+    signal sharedKey[2] <== CalcSharedKey()(
+        challengerPrivateKey, challengerPublicKey, responderPublicKey
+    );
 
     // Checks that the challenge tiles and nullifierNonce are correctly encrypted with sharedKey
-    component poseidonEncryptCheck = PoseidonEncryptCheck(messageSize);
+    signal message[messageSize];
     for (var i = 0; i < challengeTileCount; i++) {
-        poseidonEncryptCheck.message[i] <== challengeTilesXValues[i];
-        poseidonEncryptCheck.message[challengeTileCount + i] <== challengeTilesYValues[i];
+        message[i] <== challengeTilesXValues[i];
+        message[challengeTileCount + i] <== challengeTilesYValues[i];
     }
-    poseidonEncryptCheck.message[messageSize - 2] <== challengedEntity;
-    poseidonEncryptCheck.message[messageSize - 1] <== nullifierNonce;
+    message[messageSize - 2] <== challengedEntity;
+    message[messageSize - 1] <== nullifierNonce;
 
-    for (var i = 0; i < cipherTextSize; i++) {
-        poseidonEncryptCheck.ciphertext[i] <== cipherText[i];
-    }
-
-    poseidonEncryptCheck.nonce <== encryptionNonce;
-    poseidonEncryptCheck.key[0] <== sharedKey[0];
-    poseidonEncryptCheck.key[1] <== sharedKey[1];
-    poseidonEncryptCheck.out === 1;
+    signal isEncryptionValid <== PoseidonEncryptCheck(messageSize)(
+        encryptionNonce, cipherText, message, sharedKey
+    );
+    isEncryptionValid === 1;
 }
 
 component main { 
     public [positionCommitment, challengerPublicKey, cipherText, encryptionNonce]
-} = HiddenSearch();
+} = HiddenSearch(4);

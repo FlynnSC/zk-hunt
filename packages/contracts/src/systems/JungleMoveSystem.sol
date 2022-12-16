@@ -16,7 +16,7 @@ contract JungleMoveSystem is MoveSystem {
   JungleMoveCountComponent jungleMoveCountComponent;
 
   constructor(
-    IWorld _world, 
+    IWorld _world,
     address _components,
     address jungleMoveVerifierAddress
   ) MoveSystem(_world, _components) {
@@ -27,24 +27,24 @@ contract JungleMoveSystem is MoveSystem {
   }
 
   function execute(bytes memory arguments) public returns (bytes memory) {
-    (uint256 entity, uint256 commitment, uint256[8] memory proofData) = 
+    (uint256 entity, uint256 commitment, uint256[8] memory proofData) =
       abi.decode(arguments, (uint256, uint256, uint256[8]));
     executeTyped(entity, commitment, proofData);
   }
 
   function executeTyped(
-    uint256 entity, 
-    uint256 commitment, 
+    uint256 entity,
+    uint256 commitment,
     uint256[8] memory proofData
   ) public returns (bytes memory) {
     require(jungleMoveCountComponent.has(entity), "Player is not inside the jungle");
 
     require(
       jungleMoveVerifier.verifyProof(
-        proofData, 
+        proofData,
         [
-          positionCommitmentComponent.getValue(entity), 
-          commitment, 
+          positionCommitmentComponent.getValue(entity),
+          commitment,
           mapDataComponent.getValue(GodID).root
         ]
       ),

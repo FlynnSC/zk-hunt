@@ -4,10 +4,10 @@ import poseidonCipher from './poseidonEncryption/poseidonCipher.js';
 import {EntityID, getComponentValueStrict} from '@latticexyz/recs';
 import {NetworkLayer} from '../layers/network';
 import {PhaserLayer} from '../layers/phaser';
-import {getGodIndexStrict} from './entity';
 // @ts-ignore
 import {buildPoseidon} from 'circomlibjs';
 import {spearHitTileOffsetList} from './hitTiles';
+import {getSingletonComponentValueStrict} from './singletonComponent';
 
 interface PoseidonFnType {
   (inputs: (number | bigint)[]): Uint8Array;
@@ -61,9 +61,7 @@ export function calculateSharedKey(
   publicKeyComponent: NetworkLayer['components']['PublicKey'],
   publicKeyOwner: string
 ) {
-  const privateKey = new PrivKey(BigInt(getComponentValueStrict(
-    privateKeyComponent, getGodIndexStrict(privateKeyComponent.world)
-  ).value));
+  const privateKey = new PrivKey(BigInt(getSingletonComponentValueStrict(privateKeyComponent).value));
   const publicKey = new PubKey(getComponentValueStrict(
     publicKeyComponent,
     publicKeyComponent.world.getEntityIndexStrict(publicKeyOwner.toLowerCase() as EntityID)
@@ -71,7 +69,7 @@ export function calculateSharedKey(
 
   return Keypair.genEcdhSharedKey(
     privateKey,
-    publicKey,
+    publicKey
   ).map(val => val.valueOf());
 }
 
@@ -100,8 +98,7 @@ export function poseidonDecrypt(
 }
 
 export function getPrivateKey(privateKeyComponent: PhaserLayer['components']['PrivateKey']) {
-  const godIndex = getGodIndexStrict(privateKeyComponent.world);
-  const privateKeyRaw = BigInt(getComponentValueStrict(privateKeyComponent, godIndex).value);
+  const privateKeyRaw = BigInt(getSingletonComponentValueStrict(privateKeyComponent).value);
   return new PrivKey(privateKeyRaw).asCircuitInputs() as bigint;
 }
 

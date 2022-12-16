@@ -3,41 +3,27 @@ pragma circom 2.1.2;
 include "../../../node_modules/circomlib/circuits/poseidon.circom";
 include "./utils/setInclusion.circom";
 
-template jungleHitAvoid() {
-    signal input x;
-    signal input y;
-    signal input nonce;
-    signal input positionCommitment;
-
-    var hitTileCount = 4;
-    signal input hitTilesXValues[hitTileCount]; 
-    signal input hitTilesYValues[hitTileCount]; 
+template jungleHitAvoid(hitTileCount) {
+    signal input x, y, nonce, positionCommitment;
+    signal input hitTilesXValues[hitTileCount], hitTilesYValues[hitTileCount];
 
     signal output out;
 
     // Checks that the supplied x and y match the commitment
-    component poseidon = Poseidon(3);
-    poseidon.inputs[0] <== x;
-    poseidon.inputs[1] <== y;
-    poseidon.inputs[2] <== nonce;
+    signal commitment <== Poseidon(3)([x, y, nonce]);
+    commitment === positionCommitment;
 
-    poseidon.out === positionCommitment;
-
-    // Checks that the passed (x, y) aren't part of the hit tiles, and outputs the hit tiles merkle 
+    // Checks that the passed (x, y) aren't part of the hit tiles, and outputs the hit tiles merkle
     // chain root
-    component coordSetInclusion = CoordSetInclusion(hitTileCount);
-    coordSetInclusion.x <== x;
-    coordSetInclusion.y <== y;
-    for (var i = 0; i < hitTileCount; i++) {
-        coordSetInclusion.setXValues[i] <== hitTilesXValues[i];
-        coordSetInclusion.setYValues[i] <== hitTilesYValues[i];
-    }
-
-    coordSetInclusion.out === 0;
-    out <== coordSetInclusion.setMerkleChainRoot;
+    signal wasHit, hitTilesMerkleChainRoot;
+    (wasHit, hitTilesMerkleChainRoot) <== CoordSetInclusion(hitTileCount)(
+        x, y, hitTilesXValues, hitTilesYValues
+    );
+    wasHit === 0;
+    out <== hitTilesMerkleChainRoot;
 }
 
-component main {public [positionCommitment]} = jungleHitAvoid();
+component main {public [positionCommitment]} = jungleHitAvoid(4);
 
 /* INPUT = {
     "x": "1",

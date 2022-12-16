@@ -13,7 +13,6 @@ enum TileType {
 
 struct MapData {
   uint256[] chunks;
-  uint256[] intermediaryNodes;
   uint256 root; 
 }
 
@@ -24,30 +23,27 @@ contract MapDataComponent is Component {
   constructor(address world) Component(world, ID) {}
 
   function getSchema() public pure override returns (string[] memory keys, LibTypes.SchemaValue[] memory values) {
-    keys = new string[](3);
-    values = new LibTypes.SchemaValue[](3);
+    keys = new string[](2);
+    values = new LibTypes.SchemaValue[](2);
 
     keys[0] = "chunks";
     values[0] = LibTypes.SchemaValue.UINT256_ARRAY;
 
-    keys[1] = "intermediaryNodes";
-    values[1] = LibTypes.SchemaValue.UINT256_ARRAY;
-
-    keys[2] = "root";
-    values[2] = LibTypes.SchemaValue.UINT256;
+    keys[1] = "root";
+    values[1] = LibTypes.SchemaValue.UINT256;
   }
 
   // TODO bruh figure out why encoding and decoding the struct directly doesn't work on the client
   function set(uint256 entity, MapData memory value) public {
     // set(entity, abi.encode(value));
-    set(entity, abi.encode(value.chunks, value.intermediaryNodes, value.root));
+    set(entity, abi.encode(value.chunks, value.root));
   }
 
   function getValue(uint256 entity) public view returns (MapData memory) {
     // return abi.decode(getRawValue(entity), (MapData));
-    (uint256[] memory chunks, uint256[] memory intermediaryNodes, uint256 root) = 
-      abi.decode(getRawValue(entity), (uint256[], uint256[], uint256));
-    return MapData(chunks, intermediaryNodes, root);
+    (uint256[] memory chunks, uint256 root) = 
+      abi.decode(getRawValue(entity), (uint256[], uint256));
+    return MapData(chunks, root);
   }
 
   function getMapTileValue(Position memory position) public view returns (TileType) {

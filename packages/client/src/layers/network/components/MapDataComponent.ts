@@ -5,7 +5,6 @@ export function defineMapDataComponent(world: World) {
     world,
     {
       chunks: Type.StringArray,
-      intermediaryNodes: Type.StringArray,
       root: Type.String,
     },
     {

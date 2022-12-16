@@ -14,8 +14,8 @@ import {
 } from '@latticexyz/recs';
 import {angleTowardPosition, coordsEq, positionToIndex} from '../../../utils/coords';
 import {drawTileSprites} from '../../../utils/drawing';
-import {createEntity, getEntityWithComponentValue, getGodIndexStrict} from '../../../utils/entity';
-import {getParsedMapData, isMapTileJungle} from '../../../utils/mapData';
+import {createEntity, getEntityWithComponentValue} from '../../../utils/entity';
+import {isMapTileJungle} from '../../../utils/mapData';
 import {Coord} from '@latticexyz/utils';
 import {ComponentValueFromComponent, lastElementOf} from '../../../utils/misc';
 import {calcPositionFromChallengeTiles, spearHitTileOffsetList} from '../../../utils/hitTiles';
@@ -40,6 +40,7 @@ import {
 } from '../../../utils/zkProving';
 import {getRandomNonce} from '../../../utils/random';
 import {difference} from 'lodash';
+import {getSingletonComponentValue, getSingletonComponentValueStrict} from '../../../utils/singletonComponent';
 
 // TODO refactor to remove the duplicate functionality between this and the attack system?
 
@@ -49,25 +50,25 @@ export function createSearchSystem(network: NetworkLayer, phaser: PhaserLayer) {
     network: {connectedAddress},
     api: {search, searchRespond, hiddenSearch, hiddenSearchRespond, hiddenSearchLiquidate},
     components: {
-      ChallengeTiles, PendingChallenges, MapData, PositionCommitment, JungleMoveCount, PublicKey,
+      ChallengeTiles, PendingChallenges, PositionCommitment, JungleMoveCount, PublicKey,
       SearchResult, ControlledBy, Dead, HiddenChallenge, NullifierQueue
-    },
+    }
   } = network;
 
   const {
     scenes: {Main},
     components: {
-      LocalPosition, LocallyControlled, Nonce, CursorTilePosition, PrimingSearch,
+      LocalPosition, LocallyControlled, Nonce, CursorTilePosition, PrimingSearch, ParsedMapData,
       PotentialChallengeTiles, PendingChallengeTiles, ResolvedChallengeTiles, ActionSourcePosition,
       PotentialPositions, PrivateKey, LocalJungleMoveCount, LastKnownPositions,
       PendingHiddenChallengeTilesEntity, Config
-    },
+    }
   } = phaser;
 
   const getConnectedAddress = () => (connectedAddress.get() as string).toLowerCase();
 
   const getAttackDirectionIndex = (actionSourcePosition: Coord) => {
-    const cursorPosition = getComponentValue(CursorTilePosition, getGodIndexStrict(world));
+    const cursorPosition = getSingletonComponentValue(CursorTilePosition);
     if (!cursorPosition) return undefined;
 
     // Bias corrects slight direction mismatch for some angle
@@ -95,10 +96,9 @@ export function createSearchSystem(network: NetworkLayer, phaser: PhaserLayer) {
   // current potential challenge tiles
   const getPotentiallyFoundEntity = (challengingEntity: EntityIndex) => {
     const challengeTiles = getComponentValueStrict(PotentialChallengeTiles, challengingEntity);
-    const parsedMapData = getParsedMapData(MapData);
     const challengeTilesInJungle = challengeTiles.xValues.reduce((arr, x, index) => {
       const position = {x, y: challengeTiles.yValues[index]};
-      if (isMapTileJungle(parsedMapData, position)) {
+      if (isMapTileJungle(ParsedMapData, position)) {
         arr.push(position);
       }
       return arr;
@@ -151,7 +151,7 @@ export function createSearchSystem(network: NetworkLayer, phaser: PhaserLayer) {
   // Updates the pending and resolved pending tiles, and sets an expiry for the resolved tiles
   const resolveChallengeTiles = (
     challengeTilesEntity: EntityIndex, resolvedChallengeTiles?: ChallengeTilesType,
-    pendingChallengeTiles?: ChallengeTilesType,
+    pendingChallengeTiles?: ChallengeTilesType
   ) => {
     // If no resolvedChallengeTiles are passed, just uses the pending challenge tiles
     const newResolvedChallengeTiles = resolvedChallengeTiles ?? getComponentValueStrict(
@@ -236,7 +236,7 @@ export function createSearchSystem(network: NetworkLayer, phaser: PhaserLayer) {
           challengeTilesOffsetsYValues: challengeTilesOffsetsYValues.map(offsetToFieldElem),
           challengedEntity, nullifierNonce,
           positionCommitment: getComponentValueStrict(PositionCommitment, challengerEntity).value,
-          challengerPublicKey, cipherText, encryptionNonce,
+          challengerPublicKey, cipherText, encryptionNonce
         }).then(({proofData}) => {
           const [, hiddenChallengeEntity] = createEntity(world);
           hiddenSearch(
@@ -256,14 +256,14 @@ export function createSearchSystem(network: NetworkLayer, phaser: PhaserLayer) {
               poseidonChainRoot([...challengeTilesXValues, ...challengeTilesYValues]),
               challengedEntity, sharedKey[0], nullifierNonce
             );
-            const nullifierQueue = getComponentValueStrict(NullifierQueue, getGodIndexStrict(world));
+            const nullifierQueue = getSingletonComponentValueStrict(NullifierQueue);
             if (!nullifierQueue.queue.map(toBigInt).includes(nullifier)) {
               console.log('Liquidating >:D');
               const nullifierMerkleQueueValues = [
                 ...nullifierQueue.queue.slice(
                   nullifierQueue.headIndex, nullifierQueue.queue.length
                 ),
-                ...nullifierQueue.queue.slice(0, nullifierQueue.headIndex),
+                ...nullifierQueue.queue.slice(0, nullifierQueue.headIndex)
               ].map(toBigInt);
 
               hiddenSearchLiquidationProver({
@@ -272,7 +272,7 @@ export function createSearchSystem(network: NetworkLayer, phaser: PhaserLayer) {
                 nullifierNonce, nullifierMerkleQueueValues,
                 challengedEntity, challengerPublicKey,
                 cipherText, encryptionNonce,
-                nullifierMerkleQueueRoot: poseidonChainRoot(nullifierMerkleQueueValues),
+                nullifierMerkleQueueRoot: poseidonChainRoot(nullifierMerkleQueueValues)
               }).then(({proofData}) => {
                 hiddenSearchLiquidate(
                   hiddenChallengeEntity, world.entities[challengedEntityIndex], nullifier, proofData
@@ -312,11 +312,10 @@ export function createSearchSystem(network: NetworkLayer, phaser: PhaserLayer) {
         const resolvedChallengeTiles = {xValues: [] as number[], yValues: [] as number[]};
         const pendingChallengeTiles = {xValues: [] as number[], yValues: [] as number[]};
 
-        const parsedMapData = getParsedMapData(MapData);
         challengeTiles.xValues.forEach((x, index) => {
           const y = challengeTiles.yValues[index];
 
-          if (isMapTileJungle(parsedMapData, {x, y})) {
+          if (isMapTileJungle(ParsedMapData, {x, y})) {
             pendingChallengeTiles.xValues.push(x);
             pendingChallengeTiles.yValues.push(y);
           } else {
@@ -335,7 +334,7 @@ export function createSearchSystem(network: NetworkLayer, phaser: PhaserLayer) {
         const oldResolvedChallengeTiles = getComponentValue(ResolvedChallengeTiles, entity);
         resolveChallengeTiles(entity, {
           xValues: [...(oldResolvedChallengeTiles?.xValues ?? []), ...pendingChallengeTiles.xValues],
-          yValues: [...(oldResolvedChallengeTiles?.yValues ?? []), ...pendingChallengeTiles.yValues],
+          yValues: [...(oldResolvedChallengeTiles?.yValues ?? []), ...pendingChallengeTiles.yValues]
         });
       }
     }
@@ -374,7 +373,7 @@ export function createSearchSystem(network: NetworkLayer, phaser: PhaserLayer) {
       responderPublicKey: getPublicKey(PublicKey, getConnectedAddress()),
       challengerPublicKey: getPublicKey(PublicKey, challenger),
       cipherText: poseidonEncrypt([secretNonce], sharedKey, encryptionNonce),
-      encryptionNonce,
+      encryptionNonce
     };
   };
 
@@ -438,8 +437,6 @@ export function createSearchSystem(network: NetworkLayer, phaser: PhaserLayer) {
     }
   };
 
-  // TODO a hidden search should reveal the challenger's position to the responder
-
   // Handles the search response when a new pending challenge is registered, as well
   // as resolving pending challenge tiles if all pending challenges for the challenge tiles entity
   // are removed. Also listens for pending challenges being removed, to see if the corresponding
@@ -500,8 +497,7 @@ export function createSearchSystem(network: NetworkLayer, phaser: PhaserLayer) {
     const challengerLocallyControlled = challengerEntityID && hasComponent(
       LocallyControlled, challengerEntity
     );
-    const godIndex = getGodIndexStrict(world);
-    const ignoreHiddenChallenge = getComponentValue(Config, godIndex)?.ignoreHiddenChallenge;
+    const ignoreHiddenChallenge = getSingletonComponentValue(Config)?.ignoreHiddenChallenge;
     if (challengerLocallyControlled || ignoreHiddenChallenge) {
       return;
     }
@@ -529,7 +525,7 @@ export function createSearchSystem(network: NetworkLayer, phaser: PhaserLayer) {
 
       const challengeTiles = {
         xValues: message.slice(0, 4).map(Number),
-        yValues: message.slice(4, 8).map(Number),
+        yValues: message.slice(4, 8).map(Number)
       };
 
       // Calculates the challenger's position based on the challenge tiles
@@ -559,7 +555,7 @@ export function createSearchSystem(network: NetworkLayer, phaser: PhaserLayer) {
         hiddenSearchResponseProver({
           ...searchResponseValues,
           nullifierNonce: Number(nullifierNonce),
-          challengedEntity: challengedEntityFieldElem,
+          challengedEntity: challengedEntityFieldElem
         }).then(({proofData, publicSignals}) => {
           const nullifier = publicSignals[0];
           hiddenSearchRespond(

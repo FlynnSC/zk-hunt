@@ -12,31 +12,32 @@ import {
 } from '@latticexyz/recs';
 import {angleTowardPosition, coordsEq, positionToIndex} from '../../../utils/coords';
 import {drawTileSprites} from '../../../utils/drawing';
-import {createEntity, getEntityWithComponentValue, getGodIndexStrict} from '../../../utils/entity';
-import {getParsedMapData, isMapTileJungle} from '../../../utils/mapData';
+import {createEntity, getEntityWithComponentValue} from '../../../utils/entity';
+import {isMapTileJungle} from '../../../utils/mapData';
 import {Coord} from '@latticexyz/utils';
 import {ComponentValueFromComponent, lastElementOf} from '../../../utils/misc';
 import {jungleHitAvoidProver, positionCommitmentProver} from '../../../utils/zkProving';
 import {spearHitTileOffsetList} from '../../../utils/hitTiles';
 import {Sprites} from '../constants';
+import {getSingletonComponentValue} from '../../../utils/singletonComponent';
 
 export function createAttackSystem(network: NetworkLayer, phaser: PhaserLayer) {
   const {
     world,
     api: {attack, jungleAttack, jungleHitAvoid, jungleHitReceive},
-    components: {HitTiles, PotentialHits, MapData, PositionCommitment, JungleMoveCount},
+    components: {HitTiles, PotentialHits, PositionCommitment, JungleMoveCount}
   } = network;
 
   const {
     scenes: {Main},
     components: {
-      LocalPosition, LocallyControlled, Nonce, CursorTilePosition, PrimingAttack,
+      LocalPosition, LocallyControlled, Nonce, CursorTilePosition, PrimingAttack, ParsedMapData,
       PotentialHitTiles, PendingHitTiles, ResolvedHitTiles, ActionSourcePosition
-    },
+    }
   } = phaser;
 
   const getAttackDirectionIndex = (actionSourcePosition: Coord) => {
-    const cursorPosition = getComponentValue(CursorTilePosition, getGodIndexStrict(world));
+    const cursorPosition = getSingletonComponentValue(CursorTilePosition);
     if (!cursorPosition) return undefined;
 
     // Bias corrects slight direction mismatch for some angle
@@ -171,11 +172,10 @@ export function createAttackSystem(network: NetworkLayer, phaser: PhaserLayer) {
         resolvedHitTiles = {xValues: [] as number[], yValues: [] as number[]};
         const pendingHitTiles = {xValues: [] as number[], yValues: [] as number[]};
 
-        const parsedMapData = getParsedMapData(MapData);
         hitTiles.xValues.forEach((x, index) => {
           const y = hitTiles.yValues[index];
 
-          if (isMapTileJungle(parsedMapData, {x, y})) {
+          if (isMapTileJungle(ParsedMapData, {x, y})) {
             pendingHitTiles.xValues.push(x);
             pendingHitTiles.yValues.push(y);
           } else {
@@ -196,7 +196,7 @@ export function createAttackSystem(network: NetworkLayer, phaser: PhaserLayer) {
         const oldResolvedHitTiles = getComponentValue(ResolvedHitTiles, entity);
         setComponent(ResolvedHitTiles, entity, {
           xValues: [...(oldResolvedHitTiles?.xValues ?? []), ...pendingHitTiles.xValues],
-          yValues: [...(oldResolvedHitTiles?.yValues ?? []), ...pendingHitTiles.yValues],
+          yValues: [...(oldResolvedHitTiles?.yValues ?? []), ...pendingHitTiles.yValues]
         });
         removeComponent(PendingHitTiles, entity);
         createHitTilesExpiryTimeout(entity, pendingHitTiles);
@@ -242,7 +242,7 @@ export function createAttackSystem(network: NetworkLayer, phaser: PhaserLayer) {
             nonce,
             positionCommitment: getComponentValueStrict(PositionCommitment, entity).value,
             hitTilesXValues: hitTiles.xValues,
-            hitTilesYValues: hitTiles.yValues,
+            hitTilesYValues: hitTiles.yValues
           }).then(({proofData}) => {
             jungleHitAvoid(entityID, hitTilesEntityID, proofData);
           });

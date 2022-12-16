@@ -10,20 +10,20 @@ import {
   setComponent
 } from '@latticexyz/recs';
 import {Sprites} from '../constants';
-import {getParsedMapData, isMapTileJungle} from '../../../utils/mapData';
+import {isMapTileJungle} from '../../../utils/mapData';
 import {setPersistedComponent} from '../../../utils/persistedComponent';
 import {drawTileSprite} from '../../../utils/drawing';
 
 export function createLocalPositionSystem(network: NetworkLayer, phaser: PhaserLayer) {
   const {
     world,
-    components: {Position, ControlledBy, MapData, LoadingState, Dead},
+    components: {Position, ControlledBy, LoadingState, Dead},
     network: {connectedAddress}
   } = network;
 
   const {
     scenes: {Main},
-    components: {LocalPosition, LocallyControlled, LastKnownPositions},
+    components: {LocalPosition, LocallyControlled, LastKnownPositions, ParsedMapData}
   } = phaser;
 
   // Updates locally controlled to true for entities controlled by the local player
@@ -44,7 +44,7 @@ export function createLocalPositionSystem(network: NetworkLayer, phaser: PhaserL
       setPersistedComponent(LocalPosition, entity, position, persist);
 
       // Updates the last known position if inside the jungle
-      if (isMapTileJungle(getParsedMapData(MapData), position)) {
+      if (isMapTileJungle(ParsedMapData, position)) {
         setComponent(LastKnownPositions, entity, {xValues: [position.x], yValues: [position.y]});
       }
     }
@@ -57,7 +57,7 @@ export function createLocalPositionSystem(network: NetworkLayer, phaser: PhaserL
 
     if (position) {
       const locallyControlled = hasComponent(LocallyControlled, entity);
-      const isInJungleTiles = isMapTileJungle(getParsedMapData(MapData), position);
+      const isInJungleTiles = isMapTileJungle(ParsedMapData, position);
       const isDead = hasComponent(Dead, entity);
       const sprite = isDead ? Sprites.Gold : Sprites.Donkey;
       const tint = locallyControlled || isDead ? 0xffffff : 0xff7070;

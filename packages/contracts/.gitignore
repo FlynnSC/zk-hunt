@@ -9,3 +9,4 @@ abi/
 types/
 broadcast/
 src/libraries/LibDeploy.sol
+src/dependencies/*Verifier.sol

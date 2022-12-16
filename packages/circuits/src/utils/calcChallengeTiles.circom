@@ -9,16 +9,13 @@ include "calcMerkleRoot.circom";
 template CalcChallengeTiles() {
     var tileCount = 4;
 
-    signal input x;
-    signal input y;
-    signal input challengeTilesOffsetsXValues[tileCount];
-    signal input challengeTilesOffsetsYValues[tileCount];
+    signal input x, y;
+    signal input challengeTilesOffsetsXValues[tileCount], challengeTilesOffsetsYValues[tileCount];
     
-    signal output challengeTilesXValues[tileCount];
-    signal output challengeTilesYValues[tileCount];
+    signal output challengeTilesXValues[tileCount], challengeTilesYValues[tileCount];
 
     var directionCount = 32;
-    var offsetRootList[directionCount] = [
+    var offsetsRootList[directionCount] = [
         8064922012225928546443258086527263208868089486546406649922835270640116007519,
         11697654165720819748772011009203187644166088452598222000098975315328236221582,
         1800923358916051152594512062420050486913523581714347387030270210083203294364,
@@ -65,11 +62,7 @@ template CalcChallengeTiles() {
     }
 
     // Verifies that the challenge tiles offsets are valid
-    component isEqualToAny = IsEqualToAny(directionCount);
-    isEqualToAny.value <== calcMerkleChainRoot.out;
-    for (var i = 0; i < directionCount; i++) {
-        isEqualToAny.equalTo[i] <== offsetRootList[i];
-    }
-
-    isEqualToAny.out === 1;
+    signal offsetsRoot <== calcMerkleChainRoot.out;
+    signal isValidOffsetList <== IsEqualToAny(directionCount)(offsetsRoot, offsetsRootList);
+    isValidOffsetList === 1;
 }

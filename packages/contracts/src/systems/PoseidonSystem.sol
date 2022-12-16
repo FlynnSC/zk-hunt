@@ -7,6 +7,7 @@ import {MapDataComponent, ID as MapDataComponentID, TileType} from "../component
 import {PositionComponent, ID as PositionComponentID, Position} from "../components/PositionComponent.sol";
 import {ControlledByComponent, ID as ControlledByComponentID} from "../components/ControlledByComponent.sol";
 import {MAP_SIZE} from "../Constants.sol";
+import {poseidon2Bytecode, poseidon3Bytecode} from "../bytecode.sol";
 
 interface Poseidon2Contract {
     function poseidon(uint256[2] memory inputs) external returns (uint256);
@@ -22,14 +23,9 @@ contract PoseidonSystem is System {
   Poseidon2Contract poseidon2Contract;
   Poseidon3Contract poseidon3Contract;
 
-  constructor(
-    IWorld _world, 
-    address _components,
-    address poseidon2ContractAddress,
-    address poseidon3ContractAddress
-  ) System(_world, _components) {
-    poseidon2Contract = Poseidon2Contract(poseidon2ContractAddress);
-    poseidon3Contract = Poseidon3Contract(poseidon3ContractAddress);
+  constructor(IWorld _world, address _components) System(_world, _components) {
+    poseidon2Contract = Poseidon2Contract(deployBytecode(poseidon2Bytecode));
+    poseidon3Contract = Poseidon3Contract(deployBytecode(poseidon3Bytecode));
   }
 
   function execute(bytes memory arguments) public returns (bytes memory) {
@@ -45,7 +41,13 @@ contract PoseidonSystem is System {
     }    
   }
 
-  // TODO yeah this is probably dumb, but whatever
+  function deployBytecode(bytes memory bytecode) public returns (address pointer) {
+    assembly { 
+      pointer := create(0, add(bytecode, 32), mload(bytecode)) 
+    }
+  }
+
+  // TODO put this stuff into a library???
   function poseidon2(uint256 a, uint256 b) public returns (uint256) {
     return poseidon2Contract.poseidon([a, b]);
   }

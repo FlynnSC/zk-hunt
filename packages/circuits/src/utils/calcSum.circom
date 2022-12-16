@@ -2,7 +2,7 @@ pragma circom 2.1.2;
 
 // Returns the sum of all elements passed into `in`. `count` determines how many 
 // elements there are
-template CalculateTotal(count) {
+template CalcSum(count) {
     signal input in[count];
     signal output out;
 
