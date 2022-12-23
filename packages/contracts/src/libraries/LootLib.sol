@@ -8,26 +8,26 @@ import {DeadComponent, ID as DeadComponentID} from "../components/DeadComponent.
 import {LootCountComponent, ID as LootCountComponentID} from "../components/LootCountComponent.sol";
 
 library LootLib {
-    function loot(IUint256Component components, uint256 entity, uint256 entityToLoot) internal {
-        PositionComponent positionComponent = PositionComponent(
-            getAddressById(components, PositionComponentID)
-        );
-        DeadComponent deadComponent = DeadComponent(getAddressById(components, DeadComponentID));
-        LootCountComponent lootCountComponent = LootCountComponent(
-            getAddressById(components, LootCountComponentID)
-        );
+  function loot(IUint256Component components, uint256 entity, uint256 entityToLoot) internal {
+    PositionComponent positionComponent = PositionComponent(
+      getAddressById(components, PositionComponentID)
+    );
+    DeadComponent deadComponent = DeadComponent(getAddressById(components, DeadComponentID));
+    LootCountComponent lootCountComponent = LootCountComponent(
+      getAddressById(components, LootCountComponentID)
+    );
 
-        require(deadComponent.has(entityToLoot), "Cannot loot player that is still alive");
+    require(deadComponent.has(entityToLoot), "Cannot loot player that is still alive");
 
-        Position memory entityPosition = positionComponent.getValue(entity);
-        Position memory entityToLootPosition = positionComponent.getValue(entityToLoot);
-        require(
-            entityPosition.x == entityToLootPosition.x && entityPosition.y == entityToLootPosition.y,
-            "Cannot loot player in a different location"
-        );
+    Position memory entityPosition = positionComponent.getValue(entity);
+    Position memory entityToLootPosition = positionComponent.getValue(entityToLoot);
+    require(
+      entityPosition.x == entityToLootPosition.x && entityPosition.y == entityToLootPosition.y,
+      "Cannot loot player in a different location"
+    );
 
-        positionComponent.remove(entityToLoot);
-        uint256 oldLootCount = lootCountComponent.has(entity) ? lootCountComponent.getValue(entity) : 0;
-        lootCountComponent.set(entity, oldLootCount + 1);
-    }
+    positionComponent.remove(entityToLoot);
+    uint256 oldLootCount = lootCountComponent.has(entity) ? lootCountComponent.getValue(entity) : 0;
+    lootCountComponent.set(entity, oldLootCount + 1);
+  }
 }

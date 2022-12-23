@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: Unlicense
 pragma solidity >=0.8.0;
+
 import "solecs/System.sol";
-import { IWorld } from "solecs/interfaces/IWorld.sol";
-import { getAddressById } from "solecs/utils.sol";
+import {IWorld} from "solecs/interfaces/IWorld.sol";
+import {getAddressById} from "solecs/utils.sol";
 import {MapDataComponent, ID as MapDataComponentID, TileType} from "../components/MapDataComponent.sol";
 import {PositionComponent, ID as PositionComponentID, Position} from "../components/PositionComponent.sol";
 import {ControlledByComponent, ID as ControlledByComponentID} from "../components/ControlledByComponent.sol";
@@ -10,11 +11,11 @@ import {MAP_SIZE} from "../Constants.sol";
 import {poseidon2Bytecode, poseidon3Bytecode} from "../bytecode.sol";
 
 interface Poseidon2Contract {
-    function poseidon(uint256[2] memory inputs) external returns (uint256);
+  function poseidon(uint256[2] memory inputs) external returns (uint256);
 }
 
 interface Poseidon3Contract {
-    function poseidon(uint256[3] memory inputs) external returns (uint256);
+  function poseidon(uint256[3] memory inputs) external returns (uint256);
 }
 
 uint256 constant ID = uint256(keccak256("zkhunt.system.Poseidon"));
@@ -38,12 +39,12 @@ contract PoseidonSystem is System {
       return abi.encode(poseidon3(a, b, c));
     } else {
       revert("PoseidonSystem: Invalid argCount passed");
-    }    
+    }
   }
 
   function deployBytecode(bytes memory bytecode) public returns (address pointer) {
-    assembly { 
-      pointer := create(0, add(bytecode, 32), mload(bytecode)) 
+    assembly {
+      pointer := create(0, add(bytecode, 32), mload(bytecode))
     }
   }
 

@@ -40,7 +40,7 @@ export function createAttackSystem(network: NetworkLayer, phaser: PhaserLayer) {
     const cursorPosition = getSingletonComponentValue(CursorTilePosition);
     if (!cursorPosition) return undefined;
 
-    // Bias corrects slight direction mismatch for some angle
+    // Bias corrects slight direction mismatch for some angles
     const bias = 5;
     const angle = angleTowardPosition(actionSourcePosition, cursorPosition) + bias;
     return Math.floor(angle / 360 * spearHitTileOffsetList.length);
@@ -92,9 +92,7 @@ export function createAttackSystem(network: NetworkLayer, phaser: PhaserLayer) {
       Main, entity, 'PotentialHitTileSprite', value[0], value[1], Sprites.Hit, {alpha: 0.4}
     );
   });
-
-  // TODO prevent creating a new attack if there is already one pending?
-
+  
   // Handles submission of an attack, and converting potential hit tiles to pending hit tiles
   Main.input.click$.subscribe(() => {
     const entity = getEntityWithComponentValue(PrimingAttack);

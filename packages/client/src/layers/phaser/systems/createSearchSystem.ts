@@ -71,7 +71,7 @@ export function createSearchSystem(network: NetworkLayer, phaser: PhaserLayer) {
     const cursorPosition = getSingletonComponentValue(CursorTilePosition);
     if (!cursorPosition) return undefined;
 
-    // Bias corrects slight direction mismatch for some angle
+    // Bias corrects slight direction mismatch for some angles
     const bias = 5;
     const angle = angleTowardPosition(actionSourcePosition, cursorPosition) + bias;
     return Math.floor(angle / 360 * spearHitTileOffsetList.length);
@@ -145,8 +145,6 @@ export function createSearchSystem(network: NetworkLayer, phaser: PhaserLayer) {
   });
 
   // TODO split this logic up into multiple files man
-
-  // TODO prevent creating a new challenge if there is already one pending?
 
   // Updates the pending and resolved pending tiles, and sets an expiry for the resolved tiles
   const resolveChallengeTiles = (
