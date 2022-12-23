@@ -5,8 +5,10 @@ import {
   defineSyncSystem,
   EntityIndex,
   getComponentValue,
+  getComponentValueStrict,
   hasComponent,
   HasValue,
+  removeComponent,
   setComponent
 } from '@latticexyz/recs';
 import {Sprites} from '../constants';
@@ -47,6 +49,8 @@ export function createLocalPositionSystem(network: NetworkLayer, phaser: PhaserL
       if (isMapTileJungle(ParsedMapData, position)) {
         setComponent(LastKnownPositions, entity, {xValues: [position.x], yValues: [position.y]});
       }
+    } else {
+      removeComponent(LocalPosition, entity);
     }
   });
 
@@ -65,6 +69,16 @@ export function createLocalPositionSystem(network: NetworkLayer, phaser: PhaserL
       drawTileSprite(Main, `PlayerSprite-${entity}`, position, sprite, {depth: 0, tint, alpha});
     } else {
       Main.objectPool.remove(`PlayerSprite-${entity}`);
+    }
+  });
+
+  // Forces a rerender if an entity dies, so that it shows the gold sprite
+  defineComponentSystem(world, Dead, ({entity}) => {
+    if (hasComponent(Position, entity)) {
+      setComponent(
+        LocalPosition, entity,
+        getComponentValue(LocalPosition, entity) ?? getComponentValueStrict(Position, entity)
+      );
     }
   });
 }

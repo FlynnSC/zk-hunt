@@ -78,7 +78,11 @@ export async function createNetworkLayer(config: GameConfig) {
     }),
     SearchResult: defineSearchResultComponent(world),
     HiddenChallenge: defineHiddenChallengeComponent(world),
-    NullifierQueue: defineNullifierQueueComponent(world)
+    NullifierQueue: defineNullifierQueueComponent(world),
+    LootCount: defineStringComponent(world, {
+      id: 'LootCount',
+      metadata: {contractId: 'zkhunt.component.LootCount'}
+    })
   };
 
   // --- SETUP ----------------------------------------------------------------------
@@ -155,6 +159,14 @@ export async function createNetworkLayer(config: GameConfig) {
     systems['zkhunt.system.HiddenSearchLiquidation'].executeTyped(hiddenChallengeEntity, challengedEntity, nullifier, proofData);
   }
 
+  function loot(entity: EntityID, entityToLoot: EntityID) {
+    systems['zkhunt.system.Loot'].executeTyped(entity, entityToLoot);
+  }
+
+  function jungleLoot(entity: EntityID, entityToLoot: EntityID, position: Coord, proofData: BigNumberish[]) {
+    systems['zkhunt.system.JungleLoot'].executeTyped(entity, entityToLoot, position, proofData);
+  }
+
   // --- CONTEXT --------------------------------------------------------------------
   const context = {
     world,
@@ -168,7 +180,7 @@ export async function createNetworkLayer(config: GameConfig) {
     api: {
       init, spawn, plainsMove, jungleEnter, jungleMove, jungleExit, attack, jungleAttack,
       jungleHitAvoid, jungleHitReceive, revealPotentialPositions, search, searchRespond,
-      hiddenSearch, hiddenSearchRespond, hiddenSearchLiquidate
+      hiddenSearch, hiddenSearchRespond, hiddenSearchLiquidate, loot, jungleLoot
     },
     dev: setupDevSystems(world, encoders, systems)
   };

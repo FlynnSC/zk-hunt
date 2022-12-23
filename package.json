@@ -35,7 +35,7 @@
     }
   },
   "scripts": {
-    "prepare": "husky install && yarn lerna run prepare",
+    "prepare": "yarn lerna run prepare",
     "commit": "cz",
     "prettier:check": "prettier --check 'src/**/*.ts'",
     "prettier": "prettier --write 'packages/**/*.ts'",
@@ -46,6 +46,7 @@
     "start": "run-pty % yarn start:contracts % yarn start:client",
     "start:client": "wait-on tcp:8545 && yarn workspace client run start",
     "start:contracts": "yarn workspace contracts run start",
+    "build": "yarn workspace contracts run build",
     "link:mud": "for i in node_modules/@latticexyz/*; do yarn link @latticexyz/$(basename $i); done",
     "unlink:mud": "for i in node_modules/@latticexyz/*; do yarn unlink @latticexyz/$(basename $i); done && yarn install --force",
     "deploy": "yarn workspace contracts run deploy",

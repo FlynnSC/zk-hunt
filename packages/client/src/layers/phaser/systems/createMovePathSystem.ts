@@ -6,13 +6,16 @@ import {
   EntityIndex,
   getComponentValue,
   getComponentValueStrict,
+  Has,
   hasComponent,
+  HasValue,
   removeComponent,
+  runQuery,
   setComponent,
   Type,
   updateComponent
 } from '@latticexyz/recs';
-import {lastElementOf, normalizedDiff} from '../../../utils/misc';
+import {getIndexFromSet, lastElementOf, normalizedDiff} from '../../../utils/misc';
 import {getEntityWithComponentValue} from '../../../utils/entity';
 import {getMapTileMerkleData, getMapTileValue} from '../../../utils/mapData';
 import {TileType} from '../../../constants';
@@ -28,7 +31,8 @@ import {getSingletonComponentValue} from '../../../utils/singletonComponent';
 export function createMovePathSystem(network: NetworkLayer, phaser: PhaserLayer) {
   const {
     world,
-    api: {plainsMove, jungleEnter, jungleMove, jungleExit}
+    components: {Dead},
+    api: {plainsMove, jungleEnter, jungleMove, jungleExit, loot, jungleLoot}
   } = network;
 
   const {
@@ -272,7 +276,7 @@ export function createMovePathSystem(network: NetworkLayer, phaser: PhaserLayer)
   });
 
   // Makes a move if possible
-  const attemptMove = (entityIndex: EntityIndex) => {
+  const attemptMove = async (entityIndex: EntityIndex) => {
     const movePath = getComponentValue(MovePath, entityIndex);
 
     // Do not start a new move if there is already a pending move, or if reached the end of the
@@ -286,6 +290,7 @@ export function createMovePathSystem(network: NetworkLayer, phaser: PhaserLayer)
     const oldTileType = getMapTileValue(ParsedMapData, oldPosition);
     const newTileType = getMapTileValue(ParsedMapData, newPosition);
     const entityID = world.entities[entityIndex];
+    setComponent(PendingMovePosition, entityIndex, newPosition);
 
     if (oldTileType === TileType.PLAINS) {
       if (newTileType === TileType.PLAINS) {
@@ -294,25 +299,36 @@ export function createMovePathSystem(network: NetworkLayer, phaser: PhaserLayer)
         // New random nonce every time upon entering the jungle
         const nonce = getRandomNonce();
         setPersistedComponent(Nonce, entityIndex, {value: nonce});
-        positionCommitmentProver({...newPosition, nonce}).then(({proofData, publicSignals}) => {
-          jungleEnter(entityID, newPosition, publicSignals[0], proofData);
-        });
+        const {proofData, publicSignals} = await positionCommitmentProver({...newPosition, nonce});
+        jungleEnter(entityID, newPosition, publicSignals[0], proofData);
       }
     } else if (newTileType === TileType.PLAINS) {
       const nonce = getComponentValueStrict(Nonce, entityIndex).value;
       jungleExit(entityID, oldPosition, nonce, newPosition);
     } else {
       const nonce = getComponentValueStrict(Nonce, entityIndex).value;
-      jungleMoveProver({
+      const {proofData, publicSignals} = await jungleMoveProver({
         oldX: oldPosition.x, oldY: oldPosition.y, oldNonce: nonce,
         newX: newPosition.x, newY: newPosition.y,
         ...getMapTileMerkleData(ParsedMapData, newPosition)
-      }).then(({proofData, publicSignals}) => {
-        jungleMove(entityID, publicSignals[1], proofData);
-        setPersistedComponent(Nonce, entityIndex, {value: nonce + 1});
       });
+      jungleMove(entityID, publicSignals[1], proofData);
+      setPersistedComponent(Nonce, entityIndex, {value: nonce + 1});
     }
-    setComponent(PendingMovePosition, entityIndex, newPosition);
+
+    // Picks up any loot in the new position
+    const entities = runQuery([Has(Dead), HasValue(LocalPosition, newPosition)]);
+    const entityToLoot = entities.size > 0 ? getIndexFromSet(entities, 0) : undefined;
+    if (entityToLoot !== undefined) {
+      const entityToLootID = world.entities[entityToLoot];
+      if (oldTileType === TileType.JUNGLE && newTileType === TileType.JUNGLE) {
+        const nonce = getComponentValueStrict(Nonce, entityIndex).value;
+        const {proofData} = await positionCommitmentProver({...newPosition, nonce});
+        jungleLoot(entityID, entityToLootID, newPosition, proofData);
+      } else {
+        loot(entityID, entityToLootID);
+      }
+    }
   };
 
   // Handles attempting moves if the path changes, and drawing and removal of move path sprites
@@ -340,6 +356,8 @@ export function createMovePathSystem(network: NetworkLayer, phaser: PhaserLayer)
   // (indirectly, updating movePath handles submission in its system), and updates the action source
   // position
   defineComponentSystem(world, LocalPosition, ({entity, value}) => {
+    if (!value[0]) return;
+
     if (hasComponent(PendingMovePosition, entity)) {
       removeComponent(PendingMovePosition, entity);
     }

@@ -72,7 +72,7 @@ export async function createPhaserLayer(network: NetworkLayer) {
 
   initPoseidon();
   onStateSyncComplete(network, () => {
-    restorePersistedComponents(components);
+    restorePersistedComponents(components, network.components.Dead);
     setSingletonComponent(components.Config, {ignoreHiddenChallenge: false});
     if (!hasSingletonComponent(network.components.MapData)) {
       network.api.init(getMapDataChunks());

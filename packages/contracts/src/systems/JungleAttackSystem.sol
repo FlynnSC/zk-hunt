@@ -5,20 +5,13 @@ import {IWorld} from "solecs/interfaces/IWorld.sol";
 import {getAddressById, getSystemAddressById} from "solecs/utils.sol";
 import {Position} from "../components/PositionComponent.sol";
 import {AssertPositionSystem, ID as AssertPositionSystemID} from "./AssertPositionSystem.sol";
-import {AttackSystem, ID as AttackSystemID} from "./AttackSystem.sol";
+import {AttackLib} from "../libraries/AttackLib.sol";
+import {HitTileOffsetListDefinitions} from "../HitTileOffsetListDefinitions.sol";
 
 uint256 constant ID = uint256(keccak256("zkhunt.system.JungleAttack"));
 
-contract JungleAttackSystem is System {
-  AssertPositionSystem assertPositionSystem;
-  AttackSystem attackSystem;
-
-  constructor(IWorld _world, address _components) System(_world, _components) {
-    assertPositionSystem = AssertPositionSystem(
-      getSystemAddressById(components, AssertPositionSystemID)
-    );
-    attackSystem = AttackSystem(getSystemAddressById(components, AttackSystemID));
-  }
+contract JungleAttackSystem is System, HitTileOffsetListDefinitions {
+  constructor(IWorld _world, address _components) System(_world, _components) {}
 
   function execute(bytes memory arguments) public returns (bytes memory) {
     (uint256 entity, Position memory position, uint256[8] memory proofData, uint256 hitTilesEntity, 
@@ -33,7 +26,9 @@ contract JungleAttackSystem is System {
     uint256 hitTilesEntity, 
     uint8 directionIndex
   ) public returns (bytes memory) {
-    assertPositionSystem.executeTyped(entity, position, proofData);
-    attackSystem.executeTyped(entity, hitTilesEntity, directionIndex);
+    AssertPositionSystem(getSystemAddressById(components, AssertPositionSystemID)).executeTyped(
+      entity, position, proofData
+    );
+    AttackLib.attack(components, entity, hitTilesEntity, directionIndex, spearHitTileOffsetList);
   }
 }

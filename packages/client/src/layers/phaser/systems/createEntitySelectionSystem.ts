@@ -5,7 +5,6 @@ import {
   Component,
   defineComponentSystem,
   EntityIndex,
-  getComponentValue,
   getComponentValueStrict,
   Has,
   hasComponent,
@@ -25,7 +24,7 @@ import {getSingletonComponentValue, setSingletonComponent} from '../../../utils/
 
 export function createEntitySelectionSystem(network: NetworkLayer, phaser: PhaserLayer) {
   const {
-    components: {Dead, Position}
+    components: {Dead}
   } = network;
 
   const {
@@ -72,8 +71,10 @@ export function createEntitySelectionSystem(network: NetworkLayer, phaser: Phase
       );
 
       if (clickedEntities.size > 0) {
-        const entityIndex = Array.from(clickedEntities.values())[0];
-        selectEntity(Selected, entityIndex);
+        const entityIndex = getIndexFromSet(clickedEntities, 0);
+        if (!hasComponent(Dead, entityIndex)) {
+          selectEntity(Selected, entityIndex);
+        }
       }
     }
   });
@@ -90,23 +91,21 @@ export function createEntitySelectionSystem(network: NetworkLayer, phaser: Phase
       const selectionIndex = e.keyCode - 49;
       const locallyControlledEntities = runQuery([Has(LocallyControlled)]);
       if (selectionIndex < locallyControlledEntities.size) {
-        selectEntity(Selected, getIndexFromSet(locallyControlledEntities, selectionIndex));
+        const entity = getIndexFromSet(locallyControlledEntities, selectionIndex);
+        if (!hasComponent(Dead, entity)) {
+          selectEntity(Selected, entity);
+        }
       } else {
         deselectEntity(Selected);
       }
     }
   });
 
-  // Deselects the entity if it is killed, and forces a rerender of the sprite so that it shows gold
-  // by updating the local position
+  // Deselects the entity if it is killed
   defineComponentSystem(world, Dead, ({entity}) => {
     if (hasComponent(Selected, entity)) {
       removeComponent(Selected, entity);
     }
-    setComponent(
-      LocalPosition, entity,
-      getComponentValue(LocalPosition, entity) ?? getComponentValueStrict(Position, entity)
-    );
   });
 
   const drawSelectedEntitySprite = (entity: EntityIndex) => {

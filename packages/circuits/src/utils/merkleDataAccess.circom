@@ -7,7 +7,20 @@ include "./calcSum.circom";
 include "./isEqualToAny.circom";
 include "./selectIndex.circom";
 
-template IntegerDivision(divisor) {
+// Checks that `in` is less than the supplied (smol :P) `range` value
+template SmolRangeCheck(range) {
+    signal input in;
+
+    component isEqualToAny = IsEqualToAny(range);
+    isEqualToAny.value <== in;
+    for (var i = 0; i < range; i++) {
+        isEqualToAny.equalTo[i] <== i;
+    }
+
+    isEqualToAny.out === 1;
+}
+
+template IntegerDivision(divisor, maxQuotient) {
     signal input in;
 
     signal output quotient;
@@ -18,13 +31,10 @@ template IntegerDivision(divisor) {
     quotient * divisor + remainder === in;
 
     // Checks that remainder is less than the divisor
-    component isEqualToAny = IsEqualToAny(divisor);
-    isEqualToAny.value <== remainder;
-    for (var i = 0; i < divisor; i++) {
-        isEqualToAny.equalTo[i] <== i;
-    }
+    SmolRangeCheck(divisor)(remainder);
 
-    isEqualToAny.out === 1;
+    // Checks that the quotient is smaller than the supplied maxQuotient
+    SmolRangeCheck(maxQuotient)(quotient);
 }
 
 // A merkle tree where every leaf is a field element, and each leaf contains
@@ -38,14 +48,15 @@ template MerkleDataAccess(merkleTreeDepth, bitsPerSegment) {
 
     signal output out;
 
-    // The max number of segments that can fit into a field element 
+    // The max number of segments that can fit into a field element
     // (only can fit 253 'useful' bits)
     var segmentsPerLeaf = 253 \ bitsPerSegment;
-    assert(bitsPerSegment <= 253);  
+    var maxLeafIndex = 2 ** merkleTreeDepth;
+    assert(bitsPerSegment <= 253);
 
     // First is the index of the leaf, second is the local index of the segment within the leaf
     signal leafIndex, localSegmentIndex;
-    (leafIndex, localSegmentIndex) <== IntegerDivision(segmentsPerLeaf)(segmentIndex);
+    (leafIndex, localSegmentIndex) <== IntegerDivision(segmentsPerLeaf, maxLeafIndex)(segmentIndex);
 
     // Checks the supplied dataLeaf and merkleSiblings against the merkleRoot
     signal calculatedMerkleRoot <== CalcMerkleRootFromPath(merkleTreeDepth)(
@@ -66,8 +77,8 @@ template MerkleDataAccess(merkleTreeDepth, bitsPerSegment) {
         }
 
         // The power of two for the 'local' bit index (bitIndex % bitsPerSegment),
-        // that when multiplied by the current bit and summed, will result in the 
-        // integer value of the segment, converted from binary 
+        // that when multiplied by the current bit and summed, will result in the
+        // integer value of the segment, converted from binary
         var powerOfTwo = 2 ** (bitIndex % bitsPerSegment);
         isEqualToAnys[bitIndex].value <== bitIndex;
         var bitValue = powerOfTwo * leafBits[bitIndex];
@@ -77,7 +88,6 @@ template MerkleDataAccess(merkleTreeDepth, bitsPerSegment) {
     out <== dataSum.out;
 }
 
-// TODO audit this shit bruhhhhhhhhhhhhhhh
 // The same as above but for a single bit rather than a segment
 template MerkleDataBitAccess(merkleTreeDepth) {
     signal input bitIndex; // The global bit index
@@ -89,10 +99,11 @@ template MerkleDataBitAccess(merkleTreeDepth) {
 
     // Field element can only fit 253 'useful' bits
     var bitsPerLeaf = 253;
+    var maxLeafIndex = 2 ** merkleTreeDepth;
 
     // First is the index of the leaf, second is the local index of the bit within the leaf
     signal leafIndex, localBitIndex;
-    (leafIndex, localBitIndex) <== IntegerDivision(bitsPerLeaf)(bitIndex);
+    (leafIndex, localBitIndex) <== IntegerDivision(bitsPerLeaf, maxLeafIndex)(bitIndex);
 
     // Checks the supplied dataLeaf and merkleSiblings against the merkleRoot
     signal calculatedMerkleRoot <== CalcMerkleRootFromPath(merkleTreeDepth)(

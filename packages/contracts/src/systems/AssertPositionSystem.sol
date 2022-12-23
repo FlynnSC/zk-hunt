@@ -38,9 +38,6 @@ contract AssertPositionSystem is System {
     executeTyped(entity, position, proofData);
   }
 
-  // TODO probably look at structure of position revealing (with and without nonce), what
-  // systems need the logic, and refactor this?
-
   function executeTyped(
     uint256 entity, 
     Position memory position,

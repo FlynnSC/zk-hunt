@@ -1,4 +1,4 @@
-import {Component, ComponentValue, EntityID, EntityIndex, Schema, setComponent} from '@latticexyz/recs';
+import {Component, ComponentValue, EntityID, EntityIndex, hasComponent, Schema, setComponent} from '@latticexyz/recs';
 
 // TODO get rid of the worldAddress params in these two functions once the worldAddress can
 // be accessed through the world object
@@ -11,7 +11,7 @@ export function setPersistedComponent<S extends Schema>(
   component: Component<S>,
   entity: EntityIndex,
   value: ComponentValue<S>,
-  persist = true,
+  persist = true
 ) {
   setComponent(component, entity, value);
   if (persist) {
@@ -24,8 +24,9 @@ export function setPersistedComponent<S extends Schema>(
 }
 
 // Restores any found persisted component values from local storage
-export function restorePersistedComponents<S extends Schema[]>(
-  components: Record<string, Component<S[number]>>
+export function restorePersistedComponents<S extends Schema[], D extends Schema>(
+  components: Record<string, Component<S[number]>>,
+  deadComponent: Component<D>
 ) {
   const world = Object.values(components)[0].world;
   const worldAddress = getWorldAddress();
@@ -33,10 +34,10 @@ export function restorePersistedComponents<S extends Schema[]>(
     if (key.startsWith('persistedComponentValue')) {
       const [_, restoredWorldAddress, componentId, entityId] = key.split('-');
 
-      // Only restore if related to the current world, otherwise delete
-      if (restoredWorldAddress === worldAddress) {
-        const entityIndex = world.registerEntity({id: entityId as EntityID});
-        const value = JSON.parse(localStorage.getItem(key)!);
+      // Only restore if related to the current world, and the entity isn't dead, otherwise delete
+      const entityIndex = world.registerEntity({id: entityId as EntityID});
+      if (restoredWorldAddress === worldAddress && !hasComponent(deadComponent, entityIndex)) {
+        const value = JSON.parse(localStorage.getItem(key) as string);
         setComponent(components[componentId], entityIndex, value);
       } else {
         localStorage.removeItem(key);

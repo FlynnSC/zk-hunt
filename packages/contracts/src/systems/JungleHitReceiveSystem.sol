@@ -6,7 +6,7 @@ import {getAddressById, getSystemAddressById} from "solecs/utils.sol";
 import {HitTilesComponent, ID as HitTilesComponentID, HitTileSet} from "../components/HitTilesComponent.sol";
 import {PositionComponent, ID as PositionComponentID, Position} from "../components/PositionComponent.sol";
 import {PositionCommitmentComponent, ID as PositionCommitmentComponentID} from "../components/PositionCommitmentComponent.sol";
-import {KillSystem, ID as KillSystemID} from "./KillSystem.sol";
+import {KillLib} from "../libraries/KillLib.sol";
 import {PoseidonSystem, ID as PoseidonSystemID} from "./PoseidonSystem.sol";
 
 uint256 constant ID = uint256(keccak256("zkhunt.system.JungleHitReceive"));
@@ -15,7 +15,6 @@ contract JungleHitReceiveSystem is System {
   HitTilesComponent hitTilesComponent;
   PositionComponent positionComponent;
   PositionCommitmentComponent positionCommitmentComponent;
-  KillSystem killSystem;
   PoseidonSystem poseidonSystem;
 
   constructor(IWorld _world, address _components) System(_world, _components) {
@@ -24,7 +23,6 @@ contract JungleHitReceiveSystem is System {
     positionCommitmentComponent = PositionCommitmentComponent(
       getAddressById(components, PositionCommitmentComponentID)
     );
-    killSystem = KillSystem(getSystemAddressById(components, KillSystemID));
     poseidonSystem = PoseidonSystem(getSystemAddressById(components, PoseidonSystemID));
   }
 
@@ -58,6 +56,6 @@ contract JungleHitReceiveSystem is System {
     require(wasHit, "Position supplied was not contained in relevant hit tiles");
 
     positionComponent.set(entity, position);
-    killSystem.executeTyped(entity);
+    KillLib.kill(components, entity);
   }
 }

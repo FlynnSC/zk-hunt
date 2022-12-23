@@ -5,12 +5,12 @@ import {of} from 'rxjs';
 
 export function registerComponentBrowser() {
   registerUIComponent(
-    "ComponentBrowser",
+    'ComponentBrowser',
     {
       colStart: 10,
       colEnd: 13,
-      rowStart: 2,
-      rowEnd: 13,
+      rowStart: 3,
+      rowEnd: 13
     },
     (layers) => of(layers),
     (layers) => {

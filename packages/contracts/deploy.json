@@ -14,7 +14,8 @@
     "PublicKeyComponent",
     "SearchResultComponent",
     "HiddenChallengeComponent",
-    "NullifierQueueComponent"
+    "NullifierQueueComponent",
+    "LootCountComponent"
   ],
   "systems": [
     {"name": "ComponentDevSystem", "writeAccess": ["*"]},
@@ -42,12 +43,14 @@
     },
     {"name": "SpawnSystem", "writeAccess": ["PositionComponent", "ControlledByComponent", "PublicKeyComponent"]},
     {"name": "PotentialHitUpdateSystem", "writeAccess": ["PotentialHitsComponent", "HitTilesComponent"]},
-    {
-      "name": "KillSystem",
-      "writeAccess": ["DeadComponent", "JungleMoveCountComponent", "RevealedPotentialPositionsComponent"]
-    },
     {"name": "JungleHitAvoidSystem", "dependencies": ["JungleHitAvoidVerifier"]},
-    {"name": "JungleHitReceiveSystem", "writeAccess": ["PositionComponent"]},
+    {
+      "name": "JungleHitReceiveSystem",
+      "writeAccess": [
+        "PositionComponent", "DeadComponent", "JungleMoveCountComponent", "RevealedPotentialPositionsComponent",
+        "PendingChallengesComponent"
+      ]
+    },
     {
       "name": "RevealPotentialPositionsSystem",
       "writeAccess": ["RevealedPotentialPositionsComponent", "JungleMoveCountComponent"],
@@ -58,8 +61,20 @@
       "writeAccess": ["PositionComponent", "JungleMoveCountComponent"],
       "dependencies": ["PositionCommitmentVerifier"]
     },
-    {"name": "AttackSystem", "writeAccess": ["HitTilesComponent"]},
-    {"name": "JungleAttackSystem"},
+    {
+      "name": "AttackSystem",
+      "writeAccess": [
+        "HitTilesComponent", "DeadComponent", "JungleMoveCountComponent", "RevealedPotentialPositionsComponent",
+        "PendingChallengesComponent"
+      ]
+    },
+    {
+      "name": "JungleAttackSystem",
+      "writeAccess": [
+        "HitTilesComponent", "DeadComponent", "JungleMoveCountComponent", "RevealedPotentialPositionsComponent",
+        "PendingChallengesComponent"
+      ]
+    },
     {"name": "PendingChallengeUpdateSystem", "writeAccess": ["ChallengeTilesComponent", "PendingChallengesComponent"]},
     {"name": "SearchSystem", "writeAccess": ["ChallengeTilesComponent"]},
     {
@@ -81,6 +96,8 @@
       "name": "HiddenSearchLiquidationSystem",
       "writeAccess": ["HiddenChallengeComponent"],
       "dependencies": ["HiddenSearchLiquidationVerifier"]
-    }
+    },
+    {"name": "LootSystem", "writeAccess": ["PositionComponent", "LootCountComponent"]},
+    {"name": "JungleLootSystem", "writeAccess": ["PositionComponent", "LootCountComponent"]}
   ]
 }
