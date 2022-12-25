@@ -9,7 +9,7 @@ import {PositionComponent, ID as PositionComponentID, Position} from "../compone
 import {PositionCommitmentComponent, ID as PositionCommitmentComponentID} from "../components/PositionCommitmentComponent.sol";
 import {MAP_SIZE} from "../Constants.sol";
 
-function absDiff(uint8 a, uint8 b) pure returns (uint8) {
+function absDiff(uint16 a, uint16 b) pure returns (uint16) {
     return a > b ? a - b : b - a;
 }
 

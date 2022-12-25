@@ -3,8 +3,8 @@ pragma solidity >=0.8.0;
 import "solecs/Component.sol";
 
 struct Position {
-  uint8 x;
-  uint8 y;
+  uint16 x;
+  uint16 y;
 }
 
 uint256 constant ID = uint256(keccak256("zkhunt.component.Position"));
@@ -17,10 +17,10 @@ contract PositionComponent is Component {
     values = new LibTypes.SchemaValue[](2);
 
     keys[0] = "x";
-    values[0] = LibTypes.SchemaValue.UINT8;
+    values[0] = LibTypes.SchemaValue.UINT16;
 
     keys[1] = "y";
-    values[1] = LibTypes.SchemaValue.UINT8;
+    values[1] = LibTypes.SchemaValue.UINT16;
   }
 
   function set(uint256 entity, Position calldata value) public {
@@ -28,7 +28,7 @@ contract PositionComponent is Component {
   }
 
   function getValue(uint256 entity) public view returns (Position memory) {
-    (uint8 x, uint8 y) = abi.decode(getRawValue(entity), (uint8, uint8));
+    (uint16 x, uint16 y) = abi.decode(getRawValue(entity), (uint16, uint16));
     return Position(x, y);
   }
 

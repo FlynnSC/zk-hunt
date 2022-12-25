@@ -14,7 +14,6 @@ import {GameConfig, getNetworkConfig} from './config';
 import {Coord} from '@latticexyz/utils';
 import {BigNumberish} from 'ethers';
 import {defineMapDataComponent} from './components/MapDataComponent';
-import {defineHitTilesComponent} from './components/HitTilesComponent';
 import {Direction} from '../../constants';
 import {defineCoordArrayComponent, defineStringArrayComponent} from '../../utils/components';
 import {ComponentValueFromComponent} from '../../utils/misc';
@@ -40,7 +39,6 @@ export async function createNetworkLayer(config: GameConfig) {
       id: 'Position',
       metadata: {contractId: 'zkhunt.component.Position'}
     }),
-    // TODO change this and mapData to components that can represent uint256
     PositionCommitment: defineStringComponent(world, {
       id: 'PositionCommitment',
       metadata: {contractId: 'zkhunt.component.PositionCommitment'}
@@ -54,11 +52,6 @@ export async function createNetworkLayer(config: GameConfig) {
       id: 'JungleMoveCount',
       metadata: {contractId: 'zkhunt.component.JungleMoveCount'}
     }),
-    HitTiles: defineHitTilesComponent(world),
-    PotentialHits: defineStringArrayComponent(world, {
-      id: 'PotentialHits',
-      metadata: {contractId: 'zkhunt.component.PotentialHits'}
-    }),
     Dead: defineBoolComponent(world, {
       id: 'Dead',
       metadata: {contractId: 'zkhunt.component.Dead'}
@@ -71,6 +64,10 @@ export async function createNetworkLayer(config: GameConfig) {
     PendingChallenges: defineStringArrayComponent(world, {
       id: 'PendingChallenges',
       metadata: {contractId: 'zkhunt.component.PendingChallenges'}
+    }),
+    PendingChallengeCount: defineStringComponent(world, {
+      id: 'PendingChallengeCount',
+      metadata: {contractId: 'zkhunt.component.PendingChallengeCount'}
     }),
     PublicKey: defineStringArrayComponent(world, {
       id: 'PublicKey',
@@ -117,20 +114,20 @@ export async function createNetworkLayer(config: GameConfig) {
     systems['zkhunt.system.JungleExit'].executeTyped(entity, oldPosition, oldPositionNonce, newPosition);
   }
 
-  function attack(entity: EntityID, hitTilesEntity: EntityID, direction: Direction) {
-    systems['zkhunt.system.Attack'].executeTyped(entity, hitTilesEntity, direction);
+  function attack(entity: EntityID, challengeTilesEntity: EntityID, direction: Direction) {
+    systems['zkhunt.system.Attack'].executeTyped(entity, challengeTilesEntity, direction);
   }
 
-  function jungleAttack(entity: EntityID, position: Coord, proofData: string[], hitTilesEntity: EntityID, direction: Direction) {
-    systems['zkhunt.system.JungleAttack'].executeTyped(entity, position, proofData, hitTilesEntity, direction);
+  function jungleAttack(entity: EntityID, position: Coord, proofData: string[], challengeTilesEntity: EntityID, direction: Direction) {
+    systems['zkhunt.system.JungleAttack'].executeTyped(entity, position, proofData, challengeTilesEntity, direction);
   }
 
-  function jungleHitAvoid(entity: EntityID, hitTilesEntity: EntityID, proofData: string[]) {
-    systems['zkhunt.system.JungleHitAvoid'].executeTyped(entity, hitTilesEntity, proofData);
+  function jungleHitAvoid(entity: EntityID, challengeTilesEntity: EntityID, proofData: string[]) {
+    systems['zkhunt.system.JungleHitAvoid'].executeTyped(entity, challengeTilesEntity, proofData);
   }
 
-  function jungleHitReceive(entity: EntityID, hitTilesEntity: EntityID, position: Coord, nonce: number) {
-    systems['zkhunt.system.JungleHitReceive'].executeTyped(entity, hitTilesEntity, position, nonce);
+  function jungleHitReceive(entity: EntityID, challengeTilesEntity: EntityID, position: Coord, nonce: number) {
+    systems['zkhunt.system.JungleHitReceive'].executeTyped(entity, challengeTilesEntity, position, nonce);
   }
 
   type PotentialPositions = ComponentValueFromComponent<typeof components.RevealedPotentialPositions>;

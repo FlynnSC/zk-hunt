@@ -3,10 +3,10 @@ pragma solidity >=0.8.0;
 import "solecs/System.sol";
 import {IWorld} from "solecs/interfaces/IWorld.sol";
 import {getAddressById, getSystemAddressById, addressToEntity} from "solecs/utils.sol";
-import {ChallengeTilesComponent, ID as ChallengeTilesComponentID, ChallengeTileSet} from "../components/ChallengeTilesComponent.sol";
+import {ChallengeTilesComponent, ID as ChallengeTilesComponentID, ChallengeTileSet, ChallengeType} from "../components/ChallengeTilesComponent.sol";
 import {Position} from "../components/PositionComponent.sol";
 import {PositionCommitmentComponent, ID as PositionCommitmentComponentID} from "../components/PositionCommitmentComponent.sol";
-import {PendingChallengeUpdateSystem, ID as PendingChallengeUpdateSystemID, UpdateType} from "./PendingChallengeUpdateSystem.sol";
+import {PendingChallengeUpdateLib} from "../libraries/PendingChallengeUpdateLib.sol";
 import {SearchResponseVerifier} from "../dependencies/SearchResponseVerifier.sol";
 import {SearchResultComponent, ID as SearchResultComponentID, SearchResult} from "../components/SearchResultComponent.sol";
 import {PublicKeyComponent, ID as PublicKeyComponentID} from "../components/PublicKeyComponent.sol";
@@ -16,7 +16,6 @@ uint256 constant ID = uint256(keccak256("zkhunt.system.SearchResponse"));
 contract SearchResponseSystem is System {
   ChallengeTilesComponent challengeTilesComponent;
   PositionCommitmentComponent positionCommitmentComponent;
-  PendingChallengeUpdateSystem pendingChallengeUpdateSystem;
   SearchResponseVerifier searchResponseVerifier;
   SearchResultComponent searchResultComponent;
   PublicKeyComponent publicKeyComponent;
@@ -29,9 +28,6 @@ contract SearchResponseSystem is System {
     challengeTilesComponent = ChallengeTilesComponent(getAddressById(components, ChallengeTilesComponentID));
     positionCommitmentComponent = PositionCommitmentComponent(
       getAddressById(components, PositionCommitmentComponentID)
-    );
-    pendingChallengeUpdateSystem = PendingChallengeUpdateSystem(
-      getSystemAddressById(components, PendingChallengeUpdateSystemID)
     );
     searchResponseVerifier = SearchResponseVerifier(searchResponseVerifierAddress);
     searchResultComponent = SearchResultComponent(
@@ -59,6 +55,12 @@ contract SearchResponseSystem is System {
     uint256[] memory challengerPublicKey = publicKeyComponent.getValue(
       addressToEntity(challengeTiles.challenger)
     );
+
+    require(
+      challengeTiles.challengeType == ChallengeType.SEARCH, 
+      "Response for incorrect challenge type"
+    );
+
     require(
       searchResponseVerifier.verifyProof(
         proofData, 
@@ -77,6 +79,6 @@ contract SearchResponseSystem is System {
     // challenger listens for updates to the latter to determine if the former is for them to 
     // decrypt and read
     searchResultComponent.set(entity, SearchResult(cipherText, encryptionNonce));
-    pendingChallengeUpdateSystem.executeTyped(entity, challengeTilesEntity, UpdateType.REMOVE);
+    PendingChallengeUpdateLib.remove(components, entity, challengeTilesEntity);
   }
 }

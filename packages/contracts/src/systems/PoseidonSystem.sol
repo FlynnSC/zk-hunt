@@ -67,7 +67,7 @@ contract PoseidonSystem is System {
   }
 
   function coordsPoseidonChainRoot(
-    uint8[] memory xValues, uint8[] memory yValues
+    uint16[] memory xValues, uint16[] memory yValues
   ) public returns (uint256) {
     uint256 result = poseidon2(xValues[0], xValues[1]);
     for (uint256 i = 2; i < 2 * xValues.length; ++i) {

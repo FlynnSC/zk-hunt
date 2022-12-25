@@ -13,18 +13,21 @@ import {createLocalPositionSystem} from './systems/createLocalPositionSystem';
 import {createJungleMovementSystem} from './systems/createJungleMovementSystem';
 import {restorePersistedComponents} from '../../utils/persistedComponent';
 import {createMapDataSystem} from './systems/createMapDataSystem';
-import {createAttackSystem} from './systems/createAttackSystem';
 import {definePotentialMovePathComponent} from './components/PotentialMovePathComponent';
 import {onStateSyncComplete} from '../../utils/onStateSyncComplete';
 import {defineSelectedComponent} from './components/SelectedComponent';
 import {createMovePathSystem} from './systems/createMovePathSystem';
-import {defineCoordArrayComponent, defineEntityIndexComponent} from '../../utils/components';
-import {createSearchSystem} from './systems/createSearchSystem';
+import {
+  defineClientChallengeTilesComponent,
+  defineCoordArrayComponent,
+  defineEntityIndexComponent
+} from '../../utils/components';
 import {initPoseidon} from '../../utils/secretSharing';
 import {defineConfigComponent} from './components/ConfigComponent';
 import {getMapDataChunks} from '../../utils/mapData';
 import {defineParsedMapDataComponent} from './components/ParsedMapDataComponent';
 import {hasSingletonComponent, setSingletonComponent} from '../../utils/singletonComponent';
+import {createChallengeSystem} from './systems/challengeSystem/createChallengeSystem';
 
 /**
  * The Phaser layer is responsible for rendering game objects to the screen.
@@ -50,19 +53,16 @@ export async function createPhaserLayer(network: NetworkLayer) {
     ActionSourcePosition: defineCoordComponent(world, {id: 'ActionSourcePosition'}),
     PrimingMove: defineBoolComponent(world, {id: 'PrimingMove'}),
     PrimingAttack: defineBoolComponent(world, {id: 'PrimingAttack'}),
-    PotentialHitTiles: defineCoordArrayComponent(world, {id: 'PotentialHitTiles'}),
-    PendingHitTiles: defineCoordArrayComponent(world, {id: 'PendingHitTiles'}),
-    ResolvedHitTiles: defineCoordArrayComponent(world, {id: 'ResolvedHitTiles'}),
-    PrivateKey: defineStringComponent(world, {id: 'PrivateKey'}),
     PrimingSearch: defineBoolComponent(world, {id: 'PrimingSearch'}),
-    PotentialChallengeTiles: defineCoordArrayComponent(world, {id: 'PotentialChallengeTiles'}),
-    PendingChallengeTiles: defineCoordArrayComponent(world, {id: 'PendingChallengeTiles'}),
-    ResolvedChallengeTiles: defineCoordArrayComponent(world, {id: 'ResolvedChallengeTiles'}),
+    PrimingChallenge: defineBoolComponent(world, {id: 'PrimingChallenge'}),
+    PotentialChallengeTiles: defineClientChallengeTilesComponent(world, {id: 'PotentialChallengeTiles'}),
+    PendingChallengeTiles: defineClientChallengeTilesComponent(world, {id: 'PendingChallengeTiles'}),
+    ResolvedChallengeTiles: defineClientChallengeTilesComponent(world, {id: 'ResolvedChallengeTiles'}),
+    PrivateKey: defineStringComponent(world, {id: 'PrivateKey'}),
     LocalJungleMoveCount: defineNumberComponent(world, {id: 'LocalJungleMoveCount'}),
     LastKnownPositions: defineCoordArrayComponent(world, {id: 'LastKnownPositions'}),
 
     // Maps an entity to the challenge tiles entity for a hidden challenge, if they have one pending
-    // TODO allow multiple pending hidden challenges for each entity rather than just one
     PendingHiddenChallengeTilesEntity: defineEntityIndexComponent(
       world,
       {id: 'PendingHiddenChallengeTilesEntity'}
@@ -97,9 +97,8 @@ export async function createPhaserLayer(network: NetworkLayer) {
   createMapDataSystem(network, context);
   createLocalPositionSystem(network, context);
   createJungleMovementSystem(network, context);
-  createAttackSystem(network, context);
   createMovePathSystem(network, context);
-  createSearchSystem(network, context);
+  createChallengeSystem(network, context);
 
   return context;
 }

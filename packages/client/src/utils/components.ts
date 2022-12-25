@@ -52,3 +52,18 @@ export function defineEntityIndexComponent<M extends Metadata>(
     options
   );
 }
+
+export function defineClientChallengeTilesComponent<M extends Metadata>(
+  world: World,
+  options?: {id?: string; metadata?: M; indexed?: boolean}
+) {
+  return defineComponent(
+    world,
+    {
+      xValues: Type.NumberArray,
+      yValues: Type.NumberArray,
+      challengeType: Type.Number
+    },
+    options
+  );
+}

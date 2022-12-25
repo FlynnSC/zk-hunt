@@ -1,8 +1,8 @@
 import React from 'react';
 import {registerUIComponent} from '../engine';
 import styled from 'styled-components';
-import {defineQuery, getComponentValue, Has} from '@latticexyz/recs';
-import {map, merge, startWith} from 'rxjs';
+import {defineQuery, getComponentValue, Has, hasComponent} from '@latticexyz/recs';
+import {filter, map, merge, startWith} from 'rxjs';
 
 export function registerLootCounter() {
   registerUIComponent(
@@ -17,7 +17,9 @@ export function registerLootCounter() {
       const {phaser: {components: {Selected}}, network: {components: {LootCount}}} = layers;
       return merge(
         defineQuery([Has(Selected)]).update$,
-        defineQuery([Has(LootCount)]).update$
+        defineQuery([Has(LootCount)]).update$.pipe(
+          filter(({entity}) => hasComponent(Selected, entity))
+        )
       ).pipe(map(({entity, value}) => {
         return {lootCount: value[0] ? Number(getComponentValue(LootCount, entity)?.value || 0) : NaN};
       }), startWith({lootCount: NaN}));

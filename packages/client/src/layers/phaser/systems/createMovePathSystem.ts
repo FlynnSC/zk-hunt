@@ -191,7 +191,6 @@ export function createMovePathSystem(network: NetworkLayer, phaser: PhaserLayer)
 
   type PathType = ComponentValue<{xValues: Type.NumberArray, yValues: Type.NumberArray}> | undefined;
 
-  // TODO this logic could probably do with some cleaning up, especially the connector rendering :P
   const drawPath = (
     entity: EntityIndex, id: string, currPath: PathType, prevPath: PathType, potential: boolean,
     continueFromPath?: boolean
@@ -356,7 +355,8 @@ export function createMovePathSystem(network: NetworkLayer, phaser: PhaserLayer)
   // (indirectly, updating movePath handles submission in its system), and updates the action source
   // position
   defineComponentSystem(world, LocalPosition, ({entity, value}) => {
-    if (!value[0]) return;
+    // Do nothing if the position was removed or hasn't changed
+    if (!value[0] || coordsEq(value[0], value[1])) return;
 
     if (hasComponent(PendingMovePosition, entity)) {
       removeComponent(PendingMovePosition, entity);

@@ -5,12 +5,11 @@
     "PositionCommitmentComponent",
     "ControlledByComponent",
     "JungleMoveCountComponent",
-    "HitTilesComponent",
-    "PotentialHitsComponent",
     "DeadComponent",
     "RevealedPotentialPositionsComponent",
     "ChallengeTilesComponent",
     "PendingChallengesComponent",
+    "PendingChallengeCountComponent",
     "PublicKeyComponent",
     "SearchResultComponent",
     "HiddenChallengeComponent",
@@ -42,13 +41,16 @@
       ]
     },
     {"name": "SpawnSystem", "writeAccess": ["PositionComponent", "ControlledByComponent", "PublicKeyComponent"]},
-    {"name": "PotentialHitUpdateSystem", "writeAccess": ["PotentialHitsComponent", "HitTilesComponent"]},
-    {"name": "JungleHitAvoidSystem", "dependencies": ["JungleHitAvoidVerifier"]},
+    {
+      "name": "JungleHitAvoidSystem",
+      "writeAccess": ["PendingChallengesComponent", "PendingChallengeCountComponent", "ChallengeTilesComponent"],
+      "dependencies": ["JungleHitAvoidVerifier"]
+    },
     {
       "name": "JungleHitReceiveSystem",
       "writeAccess": [
         "PositionComponent", "DeadComponent", "JungleMoveCountComponent", "RevealedPotentialPositionsComponent",
-        "PendingChallengesComponent"
+        "PendingChallengesComponent", "PendingChallengeCountComponent", "ChallengeTilesComponent"
       ]
     },
     {
@@ -64,22 +66,27 @@
     {
       "name": "AttackSystem",
       "writeAccess": [
-        "HitTilesComponent", "DeadComponent", "JungleMoveCountComponent", "RevealedPotentialPositionsComponent",
-        "PendingChallengesComponent"
+        "ChallengeTilesComponent", "DeadComponent", "JungleMoveCountComponent", "RevealedPotentialPositionsComponent",
+        "PendingChallengesComponent", "PendingChallengeCountComponent"
       ]
     },
     {
       "name": "JungleAttackSystem",
       "writeAccess": [
-        "HitTilesComponent", "DeadComponent", "JungleMoveCountComponent", "RevealedPotentialPositionsComponent",
-        "PendingChallengesComponent"
+        "ChallengeTilesComponent", "DeadComponent", "JungleMoveCountComponent", "RevealedPotentialPositionsComponent",
+        "PendingChallengesComponent", "PendingChallengeCountComponent"
       ]
     },
-    {"name": "PendingChallengeUpdateSystem", "writeAccess": ["ChallengeTilesComponent", "PendingChallengesComponent"]},
-    {"name": "SearchSystem", "writeAccess": ["ChallengeTilesComponent"]},
+    {
+      "name": "SearchSystem",
+      "writeAccess": ["ChallengeTilesComponent", "PendingChallengesComponent", "PendingChallengeCountComponent"]
+    },
     {
       "name": "SearchResponseSystem",
-      "writeAccess": ["SearchResultComponent"],
+      "writeAccess": [
+        "SearchResultComponent", "PendingChallengesComponent", "PendingChallengeCountComponent",
+        "ChallengeTilesComponent"
+      ],
       "dependencies": ["SearchResponseVerifier"]
     },
     {

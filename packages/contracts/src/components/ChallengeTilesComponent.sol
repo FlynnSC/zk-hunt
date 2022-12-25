@@ -1,46 +1,63 @@
 // SPDX-License-Identifier: Unlicense
 pragma solidity >=0.8.0;
+
 import "solecs/Component.sol";
 
 uint256 constant ID = uint256(keccak256("zkhunt.component.ChallengeTiles"));
 
-struct ChallengeTileSet {
-  uint8[] xValues;
-  uint8[] yValues;
-  uint256 merkleChainRoot;
-  address challenger;
-}
+  enum ChallengeType {
+    ATTACK,
+    SEARCH
+  }
+
+  struct ChallengeTileSet {
+    uint16[] xValues;
+    uint16[] yValues;
+    uint256 merkleChainRoot;
+    ChallengeType challengeType;
+    address challenger;
+    uint256 creationTimestamp;
+  }
 
 contract ChallengeTilesComponent is Component {
   constructor(address world) Component(world, ID) {}
 
   function getSchema() public pure override returns (string[] memory keys, LibTypes.SchemaValue[] memory values) {
-    keys = new string[](4);
-    values = new LibTypes.SchemaValue[](4);
+    keys = new string[](6);
+    values = new LibTypes.SchemaValue[](6);
 
     keys[0] = "xValues";
-    values[0] = LibTypes.SchemaValue.UINT8_ARRAY;
+    values[0] = LibTypes.SchemaValue.UINT16_ARRAY;
 
     keys[1] = "yValues";
-    values[1] = LibTypes.SchemaValue.UINT8_ARRAY;
+    values[1] = LibTypes.SchemaValue.UINT16_ARRAY;
 
     keys[2] = "merkleChainRoot";
     values[2] = LibTypes.SchemaValue.UINT256;
 
-    keys[3] = "challenger";
-    values[3] = LibTypes.SchemaValue.ADDRESS;
+    keys[3] = "challengeType";
+    values[3] = LibTypes.SchemaValue.UINT8;
+
+    keys[4] = "challenger";
+    values[4] = LibTypes.SchemaValue.ADDRESS;
+
+    keys[5] = "creationTimestamp";
+    values[5] = LibTypes.SchemaValue.UINT256;
   }
 
-  // TODO figure out why encoding and decoding the struct directly doesn't work on the client
   function set(uint256 entity, ChallengeTileSet memory value) public {
-    // set(entity, abi.encode(value));
-    set(entity, abi.encode(value.xValues, value.yValues, value.merkleChainRoot, value.challenger));
+    set(entity, abi.encode(
+        value.xValues, value.yValues, value.merkleChainRoot, value.challengeType, value.challenger,
+        value.creationTimestamp
+      ));
   }
 
   function getValue(uint256 entity) public view returns (ChallengeTileSet memory) {
-    // return abi.decode(getRawValue(entity), (ChallengeTileSet));
-    (uint8[] memory xValues, uint8[] memory yValues, uint256 merkleChainRoot, address challenger) = 
-      abi.decode(getRawValue(entity), (uint8[], uint8[], uint256, address));
-    return ChallengeTileSet(xValues, yValues, merkleChainRoot, challenger);
+    (uint16[] memory xValues, uint16[] memory yValues, uint256 merkleChainRoot,
+    ChallengeType challengeType, address challenger, uint256 creationTimestamp) =
+    abi.decode(getRawValue(entity), (uint16[], uint16[], uint256, ChallengeType, address, uint256));
+    return ChallengeTileSet(
+      xValues, yValues, merkleChainRoot, challengeType, challenger, creationTimestamp
+    );
   }
 }

@@ -6,7 +6,7 @@ import {NetworkLayer} from '../layers/network';
 import {PhaserLayer} from '../layers/phaser';
 // @ts-ignore
 import {buildPoseidon} from 'circomlibjs';
-import {spearHitTileOffsetList} from './hitTiles';
+import {challengeTilesOffsetList} from './challengeTiles';
 import {getSingletonComponentValueStrict} from './singletonComponent';
 
 interface PoseidonFnType {
@@ -46,7 +46,7 @@ export function entityToFieldElem(entity: EntityID) {
 
 export function testThing() {
   let str = '';
-  spearHitTileOffsetList.forEach(offsets => {
+  challengeTilesOffsetList.forEach(offsets => {
     str += `${poseidonChainRoot(offsets.flat().map(offsetToFieldElem)).toString()},\n`;
   });
   console.log(str);
