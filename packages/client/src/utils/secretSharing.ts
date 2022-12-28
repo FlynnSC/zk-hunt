@@ -6,8 +6,8 @@ import {NetworkLayer} from '../layers/network';
 import {PhaserLayer} from '../layers/phaser';
 // @ts-ignore
 import {buildPoseidon} from 'circomlibjs';
-import {challengeTilesOffsetList} from './challengeTiles';
 import {getSingletonComponentValueStrict} from './singletonComponent';
+import {challengeTilesOffsetList} from './challengeTiles';
 
 interface PoseidonFnType {
   (inputs: (number | bigint)[]): Uint8Array;
@@ -45,11 +45,16 @@ export function entityToFieldElem(entity: EntityID) {
 }
 
 export function testThing() {
-  let str = '';
-  challengeTilesOffsetList.forEach(offsets => {
-    str += `${poseidonChainRoot(offsets.flat().map(offsetToFieldElem)).toString()},\n`;
+  const xValuesSet = [[], [], [], []] as number[][];
+  const yValuesSet = [[], [], [], []] as number[][];
+  challengeTilesOffsetList.forEach(offsetList => {
+    offsetList.forEach((offset, index) => {
+      xValuesSet[index].push(offset[0]);
+      yValuesSet[index].push(offset[1]);
+    });
   });
-  console.log(str);
+  console.log(JSON.stringify(xValuesSet));
+  console.log(JSON.stringify(yValuesSet));
 }
 
 export function toBigInt(val: any) {

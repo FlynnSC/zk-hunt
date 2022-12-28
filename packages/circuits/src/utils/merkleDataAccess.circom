@@ -6,19 +6,7 @@ include "./calcMerkleRoot.circom";
 include "./calcSum.circom";
 include "./isEqualToAny.circom";
 include "./selectIndex.circom";
-
-// Checks that `in` is less than the supplied (smol :P) `range` value
-template SmolRangeCheck(range) {
-    signal input in;
-
-    component isEqualToAny = IsEqualToAny(range);
-    isEqualToAny.value <== in;
-    for (var i = 0; i < range; i++) {
-        isEqualToAny.equalTo[i] <== i;
-    }
-
-    isEqualToAny.out === 1;
-}
+include "./smallRangeCheck.circom";
 
 template IntegerDivision(divisor, maxQuotient) {
     signal input in;
@@ -31,10 +19,10 @@ template IntegerDivision(divisor, maxQuotient) {
     quotient * divisor + remainder === in;
 
     // Checks that remainder is less than the divisor
-    SmolRangeCheck(divisor)(remainder);
+    SmallRangeCheck(divisor)(remainder);
 
     // Checks that the quotient is smaller than the supplied maxQuotient
-    SmolRangeCheck(maxQuotient)(quotient);
+    SmallRangeCheck(maxQuotient)(quotient);
 }
 
 // A merkle tree where every leaf is a field element, and each leaf contains

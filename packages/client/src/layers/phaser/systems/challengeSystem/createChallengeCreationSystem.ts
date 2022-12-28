@@ -20,7 +20,6 @@ import {
   entityToFieldElem,
   getPrivateKey,
   getPublicKey,
-  offsetToFieldElem,
   poseidon,
   poseidonChainRoot,
   poseidonEncrypt,
@@ -197,9 +196,8 @@ export function createChallengeCreationSystem(network: NetworkLayer, phaser: Pha
           hiddenSearchProver({
             ...getComponentValueStrict(LocalPosition, challengerEntity),
             positionCommitmentNonce: getComponentValueStrict(Nonce, challengerEntity).value,
+            direction: directionIndex,
             challengerPrivateKey, responderPublicKey,
-            challengeTilesOffsetsXValues: challengeTilesOffsetsXValues.map(offsetToFieldElem),
-            challengeTilesOffsetsYValues: challengeTilesOffsetsYValues.map(offsetToFieldElem),
             challengedEntity, nullifierNonce,
             positionCommitment: getComponentValueStrict(PositionCommitment, challengerEntity).value,
             challengerPublicKey, cipherText, encryptionNonce

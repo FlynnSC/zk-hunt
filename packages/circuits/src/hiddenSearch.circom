@@ -4,26 +4,21 @@ include "utils/encryption/poseidonEncryption.circom";
 include "utils/encryption/calcSharedKey.circom";
 include "utils/calcChallengeTiles.circom";
 
-// TODO test the constraint count of all circuit refactors against the old versions, and figure out
-// why there are now more constraints?????
-
-// TODO maybe merklise the cipherText and pass in as private signal?
-
 // This circuit verifies the encryption of the challenge tiles and nullifier nonce that correspond
-// to a new hidden search challenge. 
+// to a new hidden search challenge.
 //
 // TODO proper explanation of the need for each part of the nullifier, and maybe the contents of the
-// cipherText? What gauntness does the nullifier actually provide for the system in terms of
-// information reveal (or lack thereof) 
-// The implicit nullifier that is generated from this challenge is: 
+// cipherText? What guarantees does the nullifier actually provide for the system in terms of
+// information reveal (or lack thereof)
+// The implicit nullifier that is generated from this challenge is:
 // poseidon(challengeTilesMerkleChainRoot, challengedEntity, sharedKey[0], nullifierNonce)
-// which binds the challenge to a specific challenger, responder, set of challenge tiles and 
+// which binds the challenge to a specific challenger, responder, set of challenge tiles and
 // challenged entity
-// 
-// The presence of the nullifierNonce ensures the uniqueness of each nullifier even if two 
-// challanges have the same challenge tiles and sharedKey. This prevents information being extracted 
-// from the presence of repeated nullifiers, and ensures that the responder has to respond to both 
-// of two identical challenges, rather than allowing them to just respond to the first and having 
+//
+// The presence of the nullifierNonce ensures the uniqueness of each nullifier even if two
+// challenges have the same challenge tiles and sharedKey. This prevents information being extracted
+// from the presence of repeated nullifiers, and ensures that the responder has to respond to both
+// of two identical challenges, rather than allowing them to just respond to the first and having
 // the resulting nullifier satisfy the second challenge as well
 template HiddenSearch(challengeTileCount) {
     // (x, y) for each tile + challengedEntity + nullifierNonce
@@ -32,11 +27,10 @@ template HiddenSearch(challengeTileCount) {
 
 	// Private inputs
     signal input x, y;
-    signal input positionCommitmentNonce; 
+    signal input positionCommitmentNonce;
+    signal input direction;
     signal input challengerPrivateKey;
     signal input responderPublicKey[2];
-    signal input challengeTilesOffsetsXValues[challengeTileCount];
-    signal input challengeTilesOffsetsYValues[challengeTileCount];
     signal input challengedEntity;
     signal input nullifierNonce;
 
@@ -45,18 +39,16 @@ template HiddenSearch(challengeTileCount) {
     signal input challengerPublicKey[2];
     signal input cipherText[cipherTextSize];
 	signal input encryptionNonce; // Needed to encrypt/decrypt the challenge tiles
-    
+
     // Verifies that the supplied position matches the commitment
     signal commitment <== Poseidon(3)([x, y, positionCommitmentNonce]);
     commitment === positionCommitment;
 
     // Calculates the challenge tiles, and verifies the supplied offsets are valid
     signal challengeTilesXValues[challengeTileCount], challengeTilesYValues[challengeTileCount];
-    (challengeTilesXValues, challengeTilesYValues) <== CalcChallengeTiles()(
-        x, y, challengeTilesOffsetsXValues, challengeTilesOffsetsYValues
-    );
+    (challengeTilesXValues, challengeTilesYValues) <== CalcChallengeTiles()(x, y, direction);
 
-    // Generates the shared key, and checks that the supplied challengerPrivateKey matches the 
+    // Generates the shared key, and checks that the supplied challengerPrivateKey matches the
     // supplied challengerPublicKey
     signal sharedKey[2] <== CalcSharedKey()(
         challengerPrivateKey, challengerPublicKey, responderPublicKey
@@ -77,6 +69,6 @@ template HiddenSearch(challengeTileCount) {
     isEncryptionValid === 1;
 }
 
-component main { 
+component main {
     public [positionCommitment, challengerPublicKey, cipherText, encryptionNonce]
 } = HiddenSearch(4);

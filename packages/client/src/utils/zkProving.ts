@@ -99,12 +99,10 @@ type HiddenSearchProofInput = {
   x: number;
   y: number;
   positionCommitmentNonce: number;
+  direction: number;
   challengerPrivateKey: BigNumberish;
   responderPublicKey: BigNumberish[];
 
-  // BigNumberish because negative offsets are represented as large field element values
-  challengeTilesOffsetsXValues: BigNumberish[];
-  challengeTilesOffsetsYValues: BigNumberish[];
   challengedEntity: BigNumberish;
   nullifierNonce: number;
 
