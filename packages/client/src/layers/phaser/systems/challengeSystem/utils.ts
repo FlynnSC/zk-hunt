@@ -13,6 +13,7 @@ import {
 import {Coord} from '@latticexyz/utils';
 import {NetworkLayer} from '../../../network';
 import {getRandomNonce} from '../../../../utils/random';
+import {RESPONSE_PERIOD} from '../../../../constants';
 
 type ChallengeTilesType = ComponentValueFromComponent<PhaserLayer['components']['PotentialChallengeTiles']>;
 
@@ -171,4 +172,18 @@ export function getSearchResponseValues(
     cipherText: poseidonEncrypt([secretNonce], sharedKey, encryptionNonce),
     encryptionNonce
   };
+}
+
+export function createLiquidationTimeout(
+  network: NetworkLayer, entity: EntityIndex, challengeTilesEntity: EntityIndex
+) {
+  setTimeout(() => {
+    const {world, components: {PendingChallenges}, api: {liquidate}} = network;
+    const pendingChallenges = getComponentValue(PendingChallenges, entity)?.value ?? [];
+    const challengeTilesEntityID = world.entities[challengeTilesEntity];
+    if (pendingChallenges.includes(challengeTilesEntityID)) {
+      console.log('Liquidating >:D');
+      liquidate(world.entities[entity], challengeTilesEntityID);
+    }
+  }, (RESPONSE_PERIOD + 1) * 1000); // Added 1 second to be safe
 }

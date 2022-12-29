@@ -13,14 +13,15 @@ import {KillLib} from "../libraries/KillLib.sol";
 import {PoseidonSystem, ID as PoseidonSystemID} from "../systems/PoseidonSystem.sol";
 import {MapDataComponent, ID as MapDataComponentID, TileType} from "../components/MapDataComponent.sol";
 import {MAP_SIZE} from "../Constants.sol";
+import {ActionLib} from "../libraries/ActionLib.sol";
 
-  struct Stack {
-    ChallengeTilesComponent challengeTilesComponent;
-    PositionComponent positionComponent;
-    JungleMoveCountComponent jungleMoveCountComponent;
-    PoseidonSystem poseidonSystem;
-    MapDataComponent mapDataComponent;
-  }
+struct Stack {
+  ChallengeTilesComponent challengeTilesComponent;
+  PositionComponent positionComponent;
+  JungleMoveCountComponent jungleMoveCountComponent;
+  PoseidonSystem poseidonSystem;
+  MapDataComponent mapDataComponent;
+}
 
 library AttackLib {
   function attack(
@@ -34,6 +35,8 @@ library AttackLib {
     s.jungleMoveCountComponent = JungleMoveCountComponent(getAddressById(components, JungleMoveCountComponentID));
     s.poseidonSystem = PoseidonSystem(getSystemAddressById(components, PoseidonSystemID));
     s.mapDataComponent = MapDataComponent(getAddressById(components, MapDataComponentID));
+
+    ActionLib.verifyCanPerformAction(components, entity);
 
     require(
       directionIndex < challengeTilesOffsetList.length,

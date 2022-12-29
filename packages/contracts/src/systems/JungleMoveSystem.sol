@@ -8,6 +8,7 @@ import {JungleMoveVerifier} from "../dependencies/JungleMoveVerifier.sol";
 import {getAddressById} from "solecs/utils.sol";
 import {GodID} from "../Constants.sol";
 import {JungleMoveCountComponent, ID as JungleMoveCountComponentID} from "../components/JungleMoveCountComponent.sol";
+import {ActionLib} from "../libraries/ActionLib.sol";
 
 uint256 constant ID = uint256(keccak256("zkhunt.system.JungleMove"));
 
@@ -37,6 +38,7 @@ contract JungleMoveSystem is MoveSystem {
     uint256 commitment,
     uint256[8] memory proofData
   ) public returns (bytes memory) {
+    ActionLib.verifyCanPerformAction(components, entity);
     require(jungleMoveCountComponent.has(entity), "Player is not inside the jungle");
 
     require(

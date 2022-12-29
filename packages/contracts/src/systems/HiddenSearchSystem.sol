@@ -8,6 +8,7 @@ import {HiddenChallengeComponent, ID as HiddenChallengeComponentID, HiddenChalle
 import {HiddenSearchVerifier} from "../dependencies/HiddenSearchVerifier.sol";
 import {PublicKeyComponent, ID as PublicKeyComponentID} from "../components/PublicKeyComponent.sol";
 import {PositionCommitmentComponent, ID as PositionCommitmentComponentID} from "../components/PositionCommitmentComponent.sol";
+import {ActionLib} from "../libraries/ActionLib.sol";
 
 uint256 constant ID = uint256(keccak256("zkhunt.system.HiddenSearch"));
 
@@ -46,6 +47,8 @@ contract HiddenSearchSystem is System {
     uint256 entity, uint256 hiddenChallengeEntity, uint256[] memory cipherText, 
     uint256 encryptionNonce, uint256[8] memory proofData
   ) public returns (bytes memory) {
+    ActionLib.verifyCanPerformAction(components, entity);
+
     require(jungleMoveCountComponent.has(entity), "Entity not in the jungle");
 
     require(

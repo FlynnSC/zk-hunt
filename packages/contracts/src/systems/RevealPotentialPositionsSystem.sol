@@ -13,6 +13,7 @@ import {
 } from "../components/RevealedPotentialPositionsComponent.sol";
 import {PotentialPositionsRevealVerifier} from "../dependencies/PotentialPositionsRevealVerifier.sol";
 import {PositionCommitmentComponent, ID as PositionCommitmentComponentID} from "../components/PositionCommitmentComponent.sol";
+import {ActionLib} from "../libraries/ActionLib.sol";
 
 uint256 constant ID = uint256(keccak256("zkhunt.system.RevealPotentialPositions"));
 
@@ -56,6 +57,8 @@ contract RevealPotentialPositionsSystem is System {
     PotentialPositions memory potentialPositions, 
     uint256[8] memory proofData
   ) public returns (bytes memory) {
+    ActionLib.verifyCanPerformAction(components, entity);
+
     require(
       potentialPositionsRevealVerifier.verifyProof(
         proofData, 

@@ -13,7 +13,14 @@ import {lastElementOf} from '../../../../utils/misc';
 import {jungleHitAvoidProver, searchResponseProver} from '../../../../utils/zkProving';
 import {difference, pick} from 'lodash';
 import {ChallengeType} from '../../../network/components/ChallengeTilesComponent';
-import {attemptNonceDecryption, getConnectedAddress, getSearchResponseValues, resolveChallengeTiles} from './utils';
+import {
+  attemptNonceDecryption,
+  createLiquidationTimeout,
+  getConnectedAddress,
+  getSearchResponseValues,
+  resolveChallengeTiles
+} from './utils';
+import {getSingletonComponentValue} from '../../../../utils/singletonComponent';
 
 export function createChallengeResponseSystem(network: NetworkLayer, phaser: PhaserLayer) {
   const {
@@ -25,7 +32,7 @@ export function createChallengeResponseSystem(network: NetworkLayer, phaser: Pha
   const {
     components: {
       LocalPosition, LocallyControlled, Nonce, ParsedMapData, PendingChallengeTiles,
-      ResolvedChallengeTiles
+      ResolvedChallengeTiles, Config
     }
   } = phaser;
 
@@ -81,9 +88,8 @@ export function createChallengeResponseSystem(network: NetworkLayer, phaser: Pha
     const currIDs = value[0]?.value ?? [];
     const prevIDs = value[1]?.value ?? [];
 
-    // Early exit if a pending challenge was removed rather than added, or if the entity isn't
-    // locally controlled
-    if (currIDs.length < prevIDs.length || !hasComponent(LocallyControlled, entity)) return;
+    // Early exit if a pending challenge was removed rather than added
+    if (currIDs.length < prevIDs.length) return;
 
     // Because the pending challenges are created before the challenge tiles entity
     // contract-side (for good reason), the world.getEntityIndexStrict() will fail unless put
@@ -95,44 +101,51 @@ export function createChallengeResponseSystem(network: NetworkLayer, phaser: Pha
       const challengeTilesEntityIndex = world.getEntityIndexStrict(challengeTilesEntityID);
       const challengeTiles = getComponentValueStrict(ChallengeTiles, challengeTilesEntityIndex);
 
-      // Either responds to an attack or a search
-      if (challengeTiles.challengeType === ChallengeType.ATTACK) {
-        const entityPosition = getComponentValueStrict(LocalPosition, entity);
+      // If the entity is locally controlled then respond, otherwise create a liquidation timeout
+      if (hasComponent(LocallyControlled, entity)) {
+        if (!getSingletonComponentValue(Config)?.ignoreHiddenChallenge) {
+          // Responds to either an attack or a search
+          if (challengeTiles.challengeType === ChallengeType.ATTACK) {
+            const entityPosition = getComponentValueStrict(LocalPosition, entity);
 
-        let wasHit = false;
-        challengeTiles.xValues.forEach((x, index) => {
-          if (coordsEq(entityPosition, {x, y: challengeTiles.yValues[index]})) {
-            wasHit = true;
+            let wasHit = false;
+            challengeTiles.xValues.forEach((x, index) => {
+              if (coordsEq(entityPosition, {x, y: challengeTiles.yValues[index]})) {
+                wasHit = true;
+              }
+            });
+
+            const entityID = world.entities[entity];
+            const nonce = getComponentValueStrict(Nonce, entity).value;
+            if (wasHit) {
+              jungleHitReceive(entityID, challengeTilesEntityID, entityPosition, nonce);
+            } else {
+              jungleHitAvoidProver({
+                ...entityPosition,
+                nonce,
+                positionCommitment: getComponentValueStrict(PositionCommitment, entity).value,
+                hitTilesXValues: challengeTiles.xValues,
+                hitTilesYValues: challengeTiles.yValues
+              }).then(({proofData}) => {
+                jungleHitAvoid(entityID, challengeTilesEntityID, proofData);
+              });
+            }
+          } else {
+            const searchResponseValues = getSearchResponseValues(
+              network, phaser, entity, challengeTiles.challenger, challengeTiles
+            );
+
+            searchResponseProver(searchResponseValues).then(({proofData}) => {
+              const entityID = world.entities[entity];
+              searchRespond(
+                entityID, challengeTilesEntityID, searchResponseValues.cipherText,
+                searchResponseValues.encryptionNonce, proofData
+              );
+            });
           }
-        });
-
-        const entityID = world.entities[entity];
-        const nonce = getComponentValueStrict(Nonce, entity).value;
-        if (wasHit) {
-          jungleHitReceive(entityID, challengeTilesEntityID, entityPosition, nonce);
-        } else {
-          jungleHitAvoidProver({
-            ...entityPosition,
-            nonce,
-            positionCommitment: getComponentValueStrict(PositionCommitment, entity).value,
-            hitTilesXValues: challengeTiles.xValues,
-            hitTilesYValues: challengeTiles.yValues
-          }).then(({proofData}) => {
-            jungleHitAvoid(entityID, challengeTilesEntityID, proofData);
-          });
         }
       } else {
-        const searchResponseValues = getSearchResponseValues(
-          network, phaser, entity, challengeTiles.challenger, challengeTiles
-        );
-
-        searchResponseProver(searchResponseValues).then(({proofData}) => {
-          const entityID = world.entities[entity];
-          searchRespond(
-            entityID, challengeTilesEntityID, searchResponseValues.cipherText,
-            searchResponseValues.encryptionNonce, proofData
-          );
-        });
+        createLiquidationTimeout(network, entity, challengeTilesEntityIndex);
       }
     }, 10); // 10ms, just in case
   });

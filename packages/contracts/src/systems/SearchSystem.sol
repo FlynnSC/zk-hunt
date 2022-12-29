@@ -13,6 +13,7 @@ import {PoseidonSystem, ID as PoseidonSystemID} from "./PoseidonSystem.sol";
 import {MapDataComponent, ID as MapDataComponentID, TileType} from "../components/MapDataComponent.sol";
 import {ChallengeTilesOffsetListDefinitions} from "../ChallengeTilesOffsetListDefinitions.sol";
 import {MAP_SIZE} from "../Constants.sol";
+import {ActionLib} from "../libraries/ActionLib.sol";
 
 uint256 constant ID = uint256(keccak256("zkhunt.system.Search"));
 
@@ -45,6 +46,8 @@ contract SearchSystem is System, ChallengeTilesOffsetListDefinitions {
   function executeTyped(
     uint256 entity, uint256 challengeTilesEntity, uint8 directionIndex
   ) public returns (bytes memory) {
+    ActionLib.verifyCanPerformAction(components, entity);
+
     require(
       directionIndex < challengeTilesOffsetList.length,
       "Provided directionIndex is too large"

@@ -8,6 +8,7 @@ import {MapDataComponent, ID as MapDataComponentID, TileType} from "../component
 import {PositionComponent, ID as PositionComponentID, Position} from "../components/PositionComponent.sol";
 import {PositionCommitmentComponent, ID as PositionCommitmentComponentID} from "../components/PositionCommitmentComponent.sol";
 import {MAP_SIZE} from "../Constants.sol";
+import {ActionLib} from "../libraries/ActionLib.sol";
 
 function absDiff(uint16 a, uint16 b) pure returns (uint16) {
     return a > b ? a - b : b - a;
@@ -35,6 +36,8 @@ abstract contract MoveSystem is System {
     TileType fromTileType, 
     TileType toTileType
   ) internal {
+    ActionLib.verifyCanPerformAction(components, entity);
+
     // Move doesn't exceed map bounds
     require(
       newPosition.x < MAP_SIZE && newPosition.y < MAP_SIZE,

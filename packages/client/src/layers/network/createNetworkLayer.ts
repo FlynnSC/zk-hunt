@@ -164,6 +164,10 @@ export async function createNetworkLayer(config: GameConfig) {
     systems['zkhunt.system.JungleLoot'].executeTyped(entity, entityToLoot, position, proofData);
   }
 
+  function liquidate(entity: EntityID, challengeTilesEntity: EntityID) {
+    systems['zkhunt.system.Liquidation'].executeTyped(entity, challengeTilesEntity);
+  }
+
   // --- CONTEXT --------------------------------------------------------------------
   const context = {
     world,
@@ -177,7 +181,7 @@ export async function createNetworkLayer(config: GameConfig) {
     api: {
       init, spawn, plainsMove, jungleEnter, jungleMove, jungleExit, attack, jungleAttack,
       jungleHitAvoid, jungleHitReceive, revealPotentialPositions, search, searchRespond,
-      hiddenSearch, hiddenSearchRespond, hiddenSearchLiquidate, loot, jungleLoot
+      hiddenSearch, hiddenSearchRespond, hiddenSearchLiquidate, loot, jungleLoot, liquidate
     },
     dev: setupDevSystems(world, encoders, systems)
   };

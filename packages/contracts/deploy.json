@@ -105,6 +105,13 @@
       "dependencies": ["HiddenSearchLiquidationVerifier"]
     },
     {"name": "LootSystem", "writeAccess": ["PositionComponent", "LootCountComponent"]},
-    {"name": "JungleLootSystem", "writeAccess": ["PositionComponent", "LootCountComponent"]}
+    {"name": "JungleLootSystem", "writeAccess": ["PositionComponent", "LootCountComponent"]},
+    {
+      "name": "LiquidationSystem",
+      "writeAccess": [
+        "ChallengeTilesComponent", "DeadComponent", "JungleMoveCountComponent", "RevealedPotentialPositionsComponent",
+        "PendingChallengesComponent", "PendingChallengeCountComponent"
+      ]
+    }
   ]
 }

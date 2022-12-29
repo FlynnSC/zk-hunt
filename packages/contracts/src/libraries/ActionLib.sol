@@ -6,18 +6,20 @@ import {DeadComponent, ID as DeadComponentID} from "../components/DeadComponent.
 import {PendingChallengeUpdateLib} from "../libraries/PendingChallengeUpdateLib.sol";
 import {JungleMoveCountComponent, ID as JungleMoveCountComponentID} from "../components/JungleMoveCountComponent.sol";
 import {RevealedPotentialPositionsComponent, ID as RevealedPotentialPositionsComponentID} from "../components/RevealedPotentialPositionsComponent.sol";
+import {PendingChallengesComponent, ID as PendingChallengesComponentID} from "../components/PendingChallengesComponent.sol";
 import {IUint256Component} from "solecs/interfaces/IUint256Component.sol";
 
-library KillLib {
-  function kill(IUint256Component components, uint256 entity) internal {
-    DeadComponent deadComponent = DeadComponent(getAddressById(components, DeadComponentID));
-    if (!deadComponent.has(entity)) {
-      deadComponent.set(entity);
-      JungleMoveCountComponent(getAddressById(components, JungleMoveCountComponentID)).remove(entity);
-      RevealedPotentialPositionsComponent(
-        getAddressById(components, RevealedPotentialPositionsComponentID)
-      ).remove(entity);
-      PendingChallengeUpdateLib.clear(components, entity);
-    }
+library ActionLib {
+  function verifyCanPerformAction(IUint256Component components, uint256 entity) internal {
+    require(
+      !DeadComponent(getAddressById(components, DeadComponentID)).has(entity),
+      "Cannot perform action while dead"
+    );
+    require(
+      !PendingChallengesComponent(
+        getAddressById(components, PendingChallengesComponentID)
+      ).has(entity),
+      "Cannot perform action while pending challenges exist"
+    );
   }
 }

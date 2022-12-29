@@ -245,7 +245,7 @@ export function createChallengeCreationSystem(network: NetworkLayer, phaser: Pha
                   resolveChallengeTiles(phaser, challengeTilesEntity);
                 });
               }
-            }, (RESPONSE_PERIOD + 2) * 1000); // 12 seconds, response period + 2 secs to be safe
+            }, (RESPONSE_PERIOD + 1) * 1000); // 6 seconds, response period + 1 sec to be safe
           });
         } else {
           // Converts the pending challenge tiles to resolved even though no transaction was submitted

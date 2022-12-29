@@ -6,9 +6,12 @@ import {IUint256Component} from "solecs/interfaces/IUint256Component.sol";
 import {PositionComponent, ID as PositionComponentID, Position} from "../components/PositionComponent.sol";
 import {DeadComponent, ID as DeadComponentID} from "../components/DeadComponent.sol";
 import {LootCountComponent, ID as LootCountComponentID} from "../components/LootCountComponent.sol";
+import {ActionLib} from "../libraries/ActionLib.sol";
 
 library LootLib {
   function loot(IUint256Component components, uint256 entity, uint256 entityToLoot) internal {
+    ActionLib.verifyCanPerformAction(components, entity);
+
     PositionComponent positionComponent = PositionComponent(
       getAddressById(components, PositionComponentID)
     );
