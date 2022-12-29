@@ -138,9 +138,6 @@ export function createChallengeCreationSystem(network: NetworkLayer, phaser: Pha
     });
   };
 
-  // TODO make it so that the client can't submit any actions for an entity if there are pending
-  // challenges for it VVV
-
   // Handles submission of a search/hidden search, converting potential challenge tiles to
   // pending challenge tiles, and the creation of a liquidation timeout if it's a hidden search
   Main.input.click$.subscribe(() => {

@@ -1,7 +1,7 @@
 # ZK Hunt
 
 ZK Hunt is a prototype for an onchain game built on [mud](https://mud.dev), which explores different ZK game mechanics
-and information asymmetry. It is still very much a WIP, and has many TODOs to clean up :).
+and information asymmetry.
 
 ## Getting started
 

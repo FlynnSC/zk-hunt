@@ -1,4 +1,4 @@
-// TODO improve and properly attribute this
+// Everything below was copied from Nightmarket (https://github.com/factorgroup/nightmarket)
 
 /*
     Poseidon adapted for ECDH symmetric encryption
@@ -110,7 +110,7 @@ template PoseidonEncryptCheck(l) {
     for (var i = 0; i < decryptedLength + 1 ; i++) {
         pd.ciphertext[i] <== ciphertext[i];
     }
-    
+
     component calcTotal = CalcSum(l);
     component eqs[l];
 
@@ -124,7 +124,7 @@ template PoseidonEncryptCheck(l) {
     component o = IsEqual();
     o.in[0] <== calcTotal.out;
     o.in[1] <== l;
-    
+
     // Returns 1 or 0
     signal output out;
     out <== o.out;

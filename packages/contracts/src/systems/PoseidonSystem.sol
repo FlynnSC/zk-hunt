@@ -48,7 +48,6 @@ contract PoseidonSystem is System {
     }
   }
 
-  // TODO put this stuff into a library???
   function poseidon2(uint256 a, uint256 b) public returns (uint256) {
     return poseidon2Contract.poseidon([a, b]);
   }
@@ -57,7 +56,6 @@ contract PoseidonSystem is System {
     return poseidon3Contract.poseidon([a, b, c]);
   }
 
-  // TODO Yeah lmao just put this stuff into a library
   function poseidonChainRoot(uint256[] memory values) public returns (uint256) {
     uint256 result = values[0];
     for (uint256 i = 1; i < values.length; ++i) {

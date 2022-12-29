@@ -1,7 +1,5 @@
 import {Component, ComponentValue, EntityID, EntityIndex, hasComponent, Schema, setComponent} from '@latticexyz/recs';
 
-// TODO get rid of the worldAddress params in these two functions once the worldAddress can
-// be accessed through the world object
 function getWorldAddress() {
   return new URLSearchParams(window.location.search).get('worldAddress');
 }

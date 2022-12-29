@@ -6,8 +6,6 @@ include "utils/encryption/calcSharedKey.circom";
 include "utils/calcMerkleRoot.circom";
 include "utils/setInclusion.circom";
 
-// TODO maybe merklise the cipherText and pass in as private signal?
-
 // This circuit proves that there has not been a nullifier submitted (contract checks that the
 // challenge period is still active though) for the challenge referenced by the cipherText,
 // and hence the player referenced in that challenge can be liquidated

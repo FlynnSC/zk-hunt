@@ -7,8 +7,6 @@ include "utils/encryption/poseidonEncryption.circom";
 include "utils/encryption/calcSharedKey.circom";
 include "utils/setInclusion.circom";
 
-// TODO maybe merklise the cipherText and pass in as private signal?
-
 // Either proves that the player's position was not included in the challenge tiles, or that the
 // nonce corresponding to the player's position commitment was correctly encrypted with the
 // sharedKey. Ouputs a nullifier that is saved into the contract's nullifier merkle queue, which

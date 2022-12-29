@@ -7,9 +7,6 @@ include "utils/calcChallengeTiles.circom";
 // This circuit verifies the encryption of the challenge tiles and nullifier nonce that correspond
 // to a new hidden search challenge.
 //
-// TODO proper explanation of the need for each part of the nullifier, and maybe the contents of the
-// cipherText? What guarantees does the nullifier actually provide for the system in terms of
-// information reveal (or lack thereof)
 // The implicit nullifier that is generated from this challenge is:
 // poseidon(challengeTilesMerkleChainRoot, challengedEntity, sharedKey[0], nullifierNonce)
 // which binds the challenge to a specific challenger, responder, set of challenge tiles and

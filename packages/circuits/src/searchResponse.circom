@@ -7,10 +7,8 @@ include "utils/encryption/poseidonEncryption.circom";
 include "utils/encryption/calcSharedKey.circom";
 include "utils/setInclusion.circom";
 
-// TODO make the positionCommitment and challengeTilesMerkleChainRoot inputs rather than outputs?
-
-// Either proves that the player's position was not included in the challenge tiles, or that the 
-// nonce corresponding to the player's position commitment was correctly encrypted with the 
+// Either proves that the player's position was not included in the challenge tiles, or that the
+// nonce corresponding to the player's position commitment was correctly encrypted with the
 // sharedKey
 template SearchResponse(challengeTileCount) {
     var messageSize = 1;
@@ -32,13 +30,13 @@ template SearchResponse(challengeTileCount) {
 	signal input encryptionNonce; // Needed to encrypt/decrypt secretNonce
 
     // Outputs
-    signal output challengeTilesMerkleChainRoot; // TODO make input?????
+    signal output challengeTilesMerkleChainRoot;
 
     // Verifies that the supplied position matches the commitment
     signal commitment <== Poseidon(3)([x, y, positionCommitmentNonce]);
     commitment === positionCommitment;
 
-    // Generates the shared key, and checks that the supplied responderPrivateKey 
+    // Generates the shared key, and checks that the supplied responderPrivateKey
     // matches the supplied responderPublicKey
     signal sharedKey[2] <== CalcSharedKey()(
         responderPrivateKey, responderPublicKey, challengerPublicKey
@@ -50,7 +48,7 @@ template SearchResponse(challengeTileCount) {
     );
     isEncryptionValid === 1;
 
-    // Determines whether the supplied (x, y) were included in the challenge tiles, as well as 
+    // Determines whether the supplied (x, y) were included in the challenge tiles, as well as
     // calculating the merkle root
     signal wasFound;
     (wasFound, challengeTilesMerkleChainRoot) <== CoordSetInclusion(challengeTileCount)(
@@ -63,7 +61,7 @@ template SearchResponse(challengeTileCount) {
     result === 0;
 }
 
-component main { 
+component main {
     public [
         positionCommitment, responderPublicKey, challengerPublicKey, cipherText, encryptionNonce
     ]

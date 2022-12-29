@@ -1,17 +1,17 @@
 // SPDX-License-Identifier: Unlicense
 pragma solidity >=0.8.0;
+
 import "solecs/Component.sol";
 
 uint256 constant ID = uint256(keccak256("zkhunt.component.HiddenChallenge"));
 
-struct HiddenChallenge {
-  uint256[] cipherText;
-  uint256 encryptionNonce;
-  uint256 challengerEntity;
-  uint256 creationTimestamp;
-}
+  struct HiddenChallenge {
+    uint256[] cipherText;
+    uint256 encryptionNonce;
+    uint256 challengerEntity;
+    uint256 creationTimestamp;
+  }
 
-// TODO make SingletonComponent
 contract HiddenChallengeComponent is Component {
   constructor(address world) Component(world, ID) {}
 
@@ -32,19 +32,16 @@ contract HiddenChallengeComponent is Component {
     values[3] = LibTypes.SchemaValue.UINT256;
   }
 
-  // TODO bruh figure out why encoding and decoding the struct directly doesn't work on the client
   function set(uint256 entity, HiddenChallenge memory value) public {
-    // set(entity, abi.encode(value));
     set(
-      entity, 
+      entity,
       abi.encode(value.cipherText, value.encryptionNonce, value.challengerEntity, value.creationTimestamp)
     );
   }
 
   function getValue(uint256 entity) public view returns (HiddenChallenge memory) {
-    // return abi.decode(getRawValue(entity), (HiddenChallenge));
-    (uint256[] memory cipherText, uint256 encryptionNonce, uint256 challengerEntity, 
-      uint256 creationTimestamp) = abi.decode(getRawValue(entity), (uint256[], uint256, uint256, uint256));
+    (uint256[] memory cipherText, uint256 encryptionNonce, uint256 challengerEntity,
+    uint256 creationTimestamp) = abi.decode(getRawValue(entity), (uint256[], uint256, uint256, uint256));
     return HiddenChallenge(cipherText, encryptionNonce, challengerEntity, creationTimestamp);
   }
 }

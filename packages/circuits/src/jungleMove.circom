@@ -5,9 +5,6 @@ include "../../../node_modules/circomlib/circuits/poseidon.circom";
 include "./utils/merkleDataAccess.circom";
 include "./utils/isEqualToAny.circom";
 
-// TODO make CompSmallConstant template for greater than checks, and refactor all logic that uses 
-// range checks to use it (and IntegerDivision broo (take out its hard-coded logic for this))
-
 // Ensures that the absolute diff between old and new is 1 or 0, and returns whether it is 1. Also
 // ensures that the new value is within the map
 template CheckDiff(mapSize) {
@@ -20,7 +17,7 @@ template CheckDiff(mapSize) {
 
     out <== IsEqualToAny(2)(diff, [1, -1]);
 
-    // Ensures that the absolute diff is 1 or 0 
+    // Ensures that the absolute diff is 1 or 0
     signal isZero <== IsZero()(diff);
     out + isZero === 1;
 
@@ -39,7 +36,7 @@ template JungleMove(mapSize, merkleTreeDepth) {
     signal input mapDataMerkleLeaf, mapDataMerkleSiblings[merkleTreeDepth], mapDataMerkleRoot;
 
     signal output oldCommit, newCommit;
-    
+
     // Check that movement is single cell orthogonal, and stays within the map
     signal xDiff <== CheckDiff(mapSize)(oldX, newX);
     signal yDiff <== CheckDiff(mapSize)(oldY, newY);

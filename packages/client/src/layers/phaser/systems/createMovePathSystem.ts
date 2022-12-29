@@ -45,9 +45,6 @@ export function createMovePathSystem(network: NetworkLayer, phaser: PhaserLayer)
 
   const {input, objectPool} = Main;
 
-  // TODO make it so that automatic move submission is paused if there are any active challenges
-  // upon the unit
-
   const updatePotentialMovePath = (entity: EntityIndex, swapTraverseXFirst = false) => {
     const cursorPosition = getSingletonComponentValue(CursorTilePosition);
     if (!cursorPosition) return;
