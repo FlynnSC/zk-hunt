@@ -2,13 +2,13 @@ import React from 'react';
 import {registerUIComponent} from '../engine';
 import {of} from 'rxjs';
 import styled from 'styled-components';
-import {getComponentValue, getComponentValueStrict, hasComponent} from '@latticexyz/recs';
+import {getComponentValueStrict, hasComponent} from '@latticexyz/recs';
 import {getSelectedEntity} from '../../phaser/components/SelectedComponent';
 import {random} from '@latticexyz/utils';
 import {positionToIndex} from '../../../utils/coords';
 import {potentialPositionsRevealProver} from '../../../utils/zkProving';
 import {Keypair, PrivKey} from 'maci-domainobjs';
-import {getGodIndex, getGodIndexStrict} from '../../../utils/entity';
+import {getGodIndexStrict} from '../../../utils/entity';
 import {setPersistedComponent} from '../../../utils/persistedComponent';
 import {testThing} from '../../../utils/secretSharing';
 import {
@@ -99,12 +99,16 @@ export function registerControlPanel() {
         });
       };
 
-      const godIndex = getGodIndex(world);
-      const ignoreHiddenChallenge = godIndex && getComponentValue(
-        Config, godIndex
-      )?.ignoreHiddenChallenge;
-      const toggleIgnoreHiddenChallenge = () => {
-        updateSingletonComponent(Config, {ignoreHiddenChallenge: !ignoreHiddenChallenge});
+      const toggleIgnoreChallenge = () => {
+        const ignoreChallenge = !getSingletonComponentValueStrict(Config).ignoreChallenge;
+        updateSingletonComponent(Config, {ignoreChallenge});
+      };
+
+      const toggleDelayHiddenChallengeResponse = () => {
+        const delayHiddenChallengeResponse = !getSingletonComponentValueStrict(
+          Config
+        ).delayHiddenChallengeResponse;
+        updateSingletonComponent(Config, {delayHiddenChallengeResponse});
       };
 
       return (
@@ -114,14 +118,20 @@ export function registerControlPanel() {
             <button onClick={onRevealPotentialPositions}>Reveal</button>
             <button onClick={testThing}>Test</button>
           </div>
-          <div>
+          <Row>
             Ignore challenge
-            <input
+            <Checkbox
               type="checkbox"
-              checked={ignoreHiddenChallenge}
-              onChange={toggleIgnoreHiddenChallenge}
+              onChange={toggleIgnoreChallenge}
             />
-          </div>
+          </Row>
+          <Row>
+            Delay hidden challenge response
+            <Checkbox
+              type="checkbox"
+              onChange={toggleDelayHiddenChallengeResponse}
+            />
+          </Row>
         </Container>
       );
     }
@@ -133,4 +143,12 @@ const Container = styled.div`
   height: 100%;
   padding: 0.5rem;
   background: rgba(27, 28, 32, 1);
+`;
+
+const Row = styled.div`
+  margin-top: 0.5rem;
+`;
+
+const Checkbox = styled.input`
+  margin-left: 0.5rem;
 `;

@@ -5,7 +5,7 @@ import {createEntity} from '../../../../utils/entity';
 import {calcPositionFromChallengeTiles} from '../../../../utils/challengeTiles';
 import {calculateSharedKey, entityToFieldElem, poseidonDecrypt} from '../../../../utils/secretSharing';
 import {hiddenSearchResponseProver} from '../../../../utils/zkProving';
-import {getSingletonComponentValue} from '../../../../utils/singletonComponent';
+import {getSingletonComponentValue, getSingletonComponentValueStrict} from '../../../../utils/singletonComponent';
 import {ChallengeType} from '../../../network/components/ChallengeTilesComponent';
 import {RESPONSE_PERIOD} from '../../../../constants';
 import {
@@ -41,8 +41,8 @@ export function createHiddenChallengeResponseSystem(network: NetworkLayer, phase
     const challengerLocallyControlled = challengerEntityID && hasComponent(
       LocallyControlled, challengerEntity
     );
-    const ignoreHiddenChallenge = getSingletonComponentValue(Config)?.ignoreHiddenChallenge;
-    if (challengerLocallyControlled || ignoreHiddenChallenge) {
+    const ignoreChallenge = getSingletonComponentValue(Config)?.ignoreChallenge;
+    if (challengerLocallyControlled || ignoreChallenge) {
       return;
     }
 
@@ -91,24 +91,31 @@ export function createHiddenChallengeResponseSystem(network: NetworkLayer, phase
       // If the challenge was meant for the local player, then the decrypted challengedEntity will be
       // owned by them
       if (challengedEntity !== undefined && hasComponent(LocallyControlled, challengedEntity)) {
-        const searchResponseValues = getSearchResponseValues(
-          network, phaser, challengedEntity, challengerAddress, challengeTiles
-        );
-
         const [challengeTilesEntity] = createEntity(world);
         setComponent(PendingChallengeTiles, challengeTilesEntity, challengeTiles);
-        hiddenSearchResponseProver({
-          ...searchResponseValues,
-          nullifierNonce: Number(nullifierNonce),
-          challengedEntity: challengedEntityFieldElem
-        }).then(({proofData, publicSignals}) => {
-          const nullifier = publicSignals[0];
-          hiddenSearchRespond(
-            challengedEntityID, searchResponseValues.cipherText,
-            searchResponseValues.encryptionNonce, nullifier, proofData
+
+        // Delays the response if the toggle is set, so that the player can make a move before
+        // responding (to highlight the vulnerability in the naive response approach)
+        const {delayHiddenChallengeResponse} = getSingletonComponentValueStrict(Config);
+        const responseDelay = delayHiddenChallengeResponse ? 2000 : 0;
+        setTimeout(() => {
+          const searchResponseValues = getSearchResponseValues(
+            network, phaser, challengedEntity, challengerAddress, challengeTiles
           );
-          resolveChallengeTiles(phaser, challengeTilesEntity);
-        });
+
+          hiddenSearchResponseProver({
+            ...searchResponseValues,
+            nullifierNonce: Number(nullifierNonce),
+            challengedEntity: challengedEntityFieldElem
+          }).then(({proofData, publicSignals}) => {
+            const nullifier = publicSignals[0];
+            hiddenSearchRespond(
+              challengedEntityID, searchResponseValues.cipherText,
+              searchResponseValues.encryptionNonce, nullifier, proofData
+            );
+            resolveChallengeTiles(phaser, challengeTilesEntity);
+          });
+        }, responseDelay);
       }
     }, 0);
   });

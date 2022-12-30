@@ -4,10 +4,11 @@ export function defineConfigComponent(world: World) {
   return defineComponent(
     world,
     {
-      ignoreHiddenChallenge: Type.Boolean,
+      ignoreChallenge: Type.Boolean,
+      delayHiddenChallengeResponse: Type.Boolean
     },
     {
-      id: 'Config',
+      id: 'Config'
     }
   );
 }

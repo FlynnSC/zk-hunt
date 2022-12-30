@@ -103,7 +103,7 @@ export function createChallengeResponseSystem(network: NetworkLayer, phaser: Pha
 
       // If the entity is locally controlled then respond, otherwise create a liquidation timeout
       if (hasComponent(LocallyControlled, entity)) {
-        if (!getSingletonComponentValue(Config)?.ignoreHiddenChallenge) {
+        if (!getSingletonComponentValue(Config)?.ignoreChallenge) {
           // Responds to either an attack or a search
           if (challengeTiles.challengeType === ChallengeType.ATTACK) {
             const entityPosition = getComponentValueStrict(LocalPosition, entity);
