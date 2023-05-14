@@ -6,7 +6,7 @@ import {
   calculateSharedKey,
   getPrivateKey,
   getPublicKey,
-  poseidon,
+  poseidon, poseidonChainRoot,
   poseidonDecrypt,
   poseidonEncrypt
 } from '../../../../utils/secretSharing';
@@ -14,6 +14,7 @@ import {Coord} from '@latticexyz/utils';
 import {NetworkLayer} from '../../../network';
 import {getRandomNonce} from '../../../../utils/random';
 import {RESPONSE_PERIOD} from '../../../../constants';
+import {AsyncQueue} from '../../../../utils/AsyncQueue';
 
 type ChallengeTilesType = ComponentValueFromComponent<PhaserLayer['components']['PotentialChallengeTiles']>;
 
@@ -79,7 +80,9 @@ export function attemptNonceDecryption(
   network: NetworkLayer, phaser: PhaserLayer, challengedEntity: EntityIndex
 ) {
   const {components: {ControlledBy, SearchResult, PublicKey, PositionCommitment}} = network;
-  const {components: {PrivateKey, PotentialPositions, PendingHiddenChallengeTilesEntity}} = phaser;
+  const {
+    components: {PrivateKey, PotentialPositions, PendingHiddenChallengeTilesEntity, Nonce}
+  } = phaser;
 
   const searchResult = getComponentValueStrict(SearchResult, challengedEntity);
   const publicKeyOwner = getComponentValueStrict(ControlledBy, challengedEntity).value;
@@ -94,9 +97,9 @@ export function attemptNonceDecryption(
   // Ignore if the decryption is invalid (message for someone else)
   if (!message) return;
 
-  const secretNonce = message[0];
+  const secretNonce = Number(message[0]);
   let challengeDismissed = false;
-  if (secretNonce === BigInt(0)) {
+  if (secretNonce === 0) {
     challengeDismissed = true;
     console.log('Decrypted nonce as 0, challenge missed');
   } else {
@@ -116,6 +119,7 @@ export function attemptNonceDecryption(
     if (entityPosition) {
       challengeDismissed = true;
       updateRevealedEntityPosition(phaser, challengedEntity, entityPosition);
+      setComponent(Nonce, challengedEntity, {value: secretNonce});
     } else {
       console.error('Decrypted nonce didn\'t match any of the unit\'s potential positions');
     }
@@ -158,6 +162,9 @@ export function getSearchResponseValues(
   const positionCommitment = getComponentValueStrict(PositionCommitment, entity).value;
   const encryptionNonce = getRandomNonce();
   const sharedKey = calculateSharedKey(PrivateKey, PublicKey, challenger);
+  const challengeTilesCommitment = poseidonChainRoot(
+    [...challengeTiles.xValues, ...challengeTiles.yValues]
+  );
 
   return {
     ...entityPosition,
@@ -167,6 +174,7 @@ export function getSearchResponseValues(
     secretNonce,
     challengeTilesXValues: challengeTiles.xValues,
     challengeTilesYValues: challengeTiles.yValues,
+    challengeTilesCommitment,
     responderPublicKey: getPublicKey(PublicKey, getConnectedAddress(network)),
     challengerPublicKey: getPublicKey(PublicKey, challenger),
     cipherText: poseidonEncrypt([secretNonce], sharedKey, encryptionNonce),
@@ -174,16 +182,19 @@ export function getSearchResponseValues(
   };
 }
 
+const liquidationAsyncQueue = new AsyncQueue(1);
+
 export function createLiquidationTimeout(
   network: NetworkLayer, entity: EntityIndex, challengeTilesEntity: EntityIndex
 ) {
-  setTimeout(() => {
+  setTimeout(() => liquidationAsyncQueue.push(async () => {
     const {world, components: {PendingChallenges}, api: {liquidate}} = network;
     const pendingChallenges = getComponentValue(PendingChallenges, entity)?.value ?? [];
     const challengeTilesEntityID = world.entities[challengeTilesEntity];
     if (pendingChallenges.includes(challengeTilesEntityID)) {
       console.log('Liquidating >:D');
-      liquidate(world.entities[entity], challengeTilesEntityID);
+      const tx = await liquidate(world.entities[entity], challengeTilesEntityID);
+      await tx.wait();
     }
-  }, (RESPONSE_PERIOD + 1) * 1000); // Added 1 second to be safe
+  }), (RESPONSE_PERIOD + 1) * 1000); // Added 1 second to be safe
 }

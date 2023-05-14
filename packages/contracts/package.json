@@ -62,6 +62,7 @@
     "prettier-plugin-solidity": "^1.0.0-beta.19",
     "rimraf": "^3.0.2",
     "run-pty": "^3.0.0",
+    "shelljs": "^0.8.5",
     "solhint": "^3.3.7",
     "ts-node": "^10.7.0",
     "typechain": "^7.0.1",

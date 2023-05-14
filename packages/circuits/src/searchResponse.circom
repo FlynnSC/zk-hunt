@@ -24,13 +24,11 @@ template SearchResponse(challengeTileCount) {
 
     // Public inputs
     signal input positionCommitment;
+    signal input challengeTilesCommitment;
     signal input responderPublicKey[2];
     signal input challengerPublicKey[2];
     signal input cipherText[cipherTextSize];
 	signal input encryptionNonce; // Needed to encrypt/decrypt secretNonce
-
-    // Outputs
-    signal output challengeTilesMerkleChainRoot;
 
     // Verifies that the supplied position matches the commitment
     signal commitment <== Poseidon(3)([x, y, positionCommitmentNonce]);
@@ -48,11 +46,10 @@ template SearchResponse(challengeTileCount) {
     );
     isEncryptionValid === 1;
 
-    // Determines whether the supplied (x, y) were included in the challenge tiles, as well as
-    // calculating the merkle root
-    signal wasFound;
-    (wasFound, challengeTilesMerkleChainRoot) <== CoordSetInclusion(challengeTileCount)(
-        x, y, challengeTilesXValues, challengeTilesYValues
+    // Determines whether the supplied (x, y) were included in the challenge tiles, and checks that 
+    // the challenge tiles match the commitment
+    signal wasFound <== CoordSetInclusion(challengeTileCount)(
+        x, y, challengeTilesXValues, challengeTilesYValues, challengeTilesCommitment
     );
 
     // Ensures that either the secret nonce corresponds to the position commitment, or that the
@@ -63,6 +60,7 @@ template SearchResponse(challengeTileCount) {
 
 component main {
     public [
-        positionCommitment, responderPublicKey, challengerPublicKey, cipherText, encryptionNonce
+        positionCommitment, challengeTilesCommitment, responderPublicKey, challengerPublicKey, 
+        cipherText, encryptionNonce
     ]
 } = SearchResponse(4);

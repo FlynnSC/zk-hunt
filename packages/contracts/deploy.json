@@ -40,7 +40,10 @@
         "RevealedPotentialPositionsComponent"
       ]
     },
-    {"name": "SpawnSystem", "writeAccess": ["PositionComponent", "ControlledByComponent", "PublicKeyComponent"]},
+    {
+      "name": "SpawnSystem",
+      "writeAccess": ["PositionComponent", "ControlledByComponent", "PublicKeyComponent", "NullifierQueueComponent"]
+    },
     {
       "name": "JungleHitAvoidSystem",
       "writeAccess": ["PendingChallengesComponent", "PendingChallengeCountComponent", "ChallengeTilesComponent"],
@@ -103,7 +106,7 @@
       "name": "HiddenSearchLiquidationSystem",
       "writeAccess": [
         "HiddenChallengeComponent", "DeadComponent", "JungleMoveCountComponent", "RevealedPotentialPositionsComponent",
-        "PendingChallengesComponent", "PendingChallengeCountComponent"
+        "PendingChallengesComponent", "PendingChallengeCountComponent", "PositionComponent"
       ],
       "dependencies": ["HiddenSearchLiquidationVerifier"]
     },
@@ -113,7 +116,7 @@
       "name": "LiquidationSystem",
       "writeAccess": [
         "ChallengeTilesComponent", "DeadComponent", "JungleMoveCountComponent", "RevealedPotentialPositionsComponent",
-        "PendingChallengesComponent", "PendingChallengeCountComponent"
+        "PendingChallengesComponent", "PendingChallengeCountComponent", "PositionComponent"
       ]
     }
   ]

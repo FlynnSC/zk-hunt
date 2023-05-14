@@ -82,7 +82,7 @@ verifies the validity of the move. This proof verifies that
 1. The different between the position corresponding to the old commitment and the position corresponding to the new
    commitment, is only a single step in an orthogonal direction (no diagonal movement).
 2. That the new tile that you have moved into is a jungle tile. This is determined by checking a bitwise representation
-   of the map, which is bit packed into field elements and merklised to that there are fewer public inputs to the
+   of the map, which is bit packed into field elements and merklised so that there are fewer public inputs to the
    circuit.
 
 Since you don’t submit your actual new position, all other players don’t actually know which tile you moved into, only
@@ -236,11 +236,11 @@ Storing the last N responses for all players onchain is expensive though, becaus
 uint256’s, and so instead a more efficient nullifier scheme is used. When player A submits their challenge, an implicit
 nullifier is generated, which takes the form of:
 
-`poseidon(challengeTilesMerkleChainRoot, challengedPlayer, sharedKey[0], nullifierNonce)`
+`poseidon(challengeTilesCommitment, challengedPlayer, sharedKey[0], nullifierNonce)`
 
 Where:
 
-- `challengeTilesMerkleChainRoot` is the root of the merklisation of the challenge tiles (as a chain rather than a tree)
+- `challengeTilesCommmitment` is the root of the merklisation of the challenge tiles (as a chain rather than a tree)
   . This binds the challenge to a particular set of tiles.
 - `challengedPlayer` is the entity id of the player being challenged (the uint256 id is converted to a field element by
   bit masking it with 2^253 - 1). This binds the challenge to a particular entity.

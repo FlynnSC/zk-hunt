@@ -11,7 +11,7 @@ export function defineChallengeTilesComponent(world: World) {
     {
       xValues: Type.NumberArray,
       yValues: Type.NumberArray,
-      merkleChainRoot: Type.String,
+      commitment: Type.String,
       challengeType: Type.Number,
       challenger: Type.String,
       creationTimestamp: Type.String

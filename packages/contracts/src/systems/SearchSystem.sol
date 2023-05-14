@@ -92,16 +92,16 @@ contract SearchSystem is System, ChallengeTilesOffsetListDefinitions {
     }
 
     ChallengeTileSet memory challengeTileSet = ChallengeTileSet({
-    xValues : challengeTilesXValues,
-    yValues : challengeTilesYValues,
-    merkleChainRoot : 0,
-    challengeType : ChallengeType.SEARCH,
-    challenger : msg.sender,
-    creationTimestamp : block.timestamp
+      xValues: challengeTilesXValues,
+      yValues: challengeTilesYValues,
+      commitment: 0,
+      challengeType: ChallengeType.SEARCH,
+      challenger: msg.sender,
+      creationTimestamp: block.timestamp
     });
 
     if (pendingChallengeExists) {
-      challengeTileSet.merkleChainRoot = poseidonSystem.coordsPoseidonChainRoot(
+      challengeTileSet.commitment = poseidonSystem.coordsPoseidonChainRoot(
         challengeTilesXValues, challengeTilesYValues
       );
       challengeTilesComponent.set(challengeTilesEntity, challengeTileSet);

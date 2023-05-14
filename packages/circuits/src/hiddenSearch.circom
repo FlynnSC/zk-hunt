@@ -8,7 +8,7 @@ include "utils/calcChallengeTiles.circom";
 // to a new hidden search challenge.
 //
 // The implicit nullifier that is generated from this challenge is:
-// poseidon(challengeTilesMerkleChainRoot, challengedEntity, sharedKey[0], nullifierNonce)
+// poseidon(challengeTilesCommitment, challengedEntity, sharedKey[0], nullifierNonce)
 // which binds the challenge to a specific challenger, responder, set of challenge tiles and
 // challenged entity
 //
@@ -41,7 +41,7 @@ template HiddenSearch(challengeTileCount) {
     signal commitment <== Poseidon(3)([x, y, positionCommitmentNonce]);
     commitment === positionCommitment;
 
-    // Calculates the challenge tiles, and verifies the supplied offsets are valid
+    // Calculates the challenge tiles
     signal challengeTilesXValues[challengeTileCount], challengeTilesYValues[challengeTileCount];
     (challengeTilesXValues, challengeTilesYValues) <== CalcChallengeTiles()(x, y, direction);
 

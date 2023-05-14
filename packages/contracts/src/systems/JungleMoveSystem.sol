@@ -28,32 +28,29 @@ contract JungleMoveSystem is MoveSystem {
   }
 
   function execute(bytes memory arguments) public returns (bytes memory) {
-    (uint256 entity, uint256 commitment, uint256[8] memory proofData) =
+    (uint256 entity, uint256 newCommitment, uint256[8] memory proofData) =
       abi.decode(arguments, (uint256, uint256, uint256[8]));
-    executeTyped(entity, commitment, proofData);
+    executeTyped(entity, newCommitment, proofData);
   }
 
   function executeTyped(
     uint256 entity,
-    uint256 commitment,
+    uint256 newCommitment,
     uint256[8] memory proofData
   ) public returns (bytes memory) {
     ActionLib.verifyCanPerformAction(components, entity);
     require(jungleMoveCountComponent.has(entity), "Player is not inside the jungle");
 
-    require(
-      jungleMoveVerifier.verifyProof(
-        proofData,
-        [
-          positionCommitmentComponent.getValue(entity),
-          commitment,
-          mapDataComponent.getValue(GodID).root
-        ]
-      ),
-      "Invalid proof"
+    jungleMoveVerifier.verifyProof(
+      proofData,
+      [
+        newCommitment,
+        positionCommitmentComponent.getValue(entity),
+        mapDataComponent.getValue(GodID).root
+      ]
     );
 
-    positionCommitmentComponent.set(entity, commitment);
+    positionCommitmentComponent.set(entity, newCommitment);
     jungleMoveCountComponent.set(entity, jungleMoveCountComponent.getValue(entity) + 1);
   }
 }

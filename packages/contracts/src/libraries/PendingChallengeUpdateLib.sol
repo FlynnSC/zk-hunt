@@ -31,9 +31,9 @@ library PendingChallengeUpdateLib {
     pendingChallengesComponent.set(entity, newPendingChallenges);
 
     // Increments the pending challenge count for the challengeTilesEntity
-    uint256 newPendingChallengeCount = pendingChallengeCountComponent.has(challengeTilesEntity) ?
-      pendingChallengeCountComponent.getValue(challengeTilesEntity) : 1;
-    pendingChallengeCountComponent.set(challengeTilesEntity, newPendingChallengeCount);
+    uint256 pendingChallengeCount = pendingChallengeCountComponent.has(challengeTilesEntity) ?
+      pendingChallengeCountComponent.getValue(challengeTilesEntity) : 0;
+    pendingChallengeCountComponent.set(challengeTilesEntity, pendingChallengeCount + 1);
   }
 
   function remove(

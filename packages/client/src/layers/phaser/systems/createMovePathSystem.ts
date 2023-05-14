@@ -27,6 +27,7 @@ import {angleTowardPosition, coordsEq} from '../../../utils/coords';
 import {Coord} from '@latticexyz/utils';
 import {getRandomNonce} from '../../../utils/random';
 import {getSingletonComponentValue} from '../../../utils/singletonComponent';
+import {poseidon} from '../../../utils/secretSharing';
 
 export function createMovePathSystem(network: NetworkLayer, phaser: PhaserLayer) {
   const {
@@ -303,12 +304,14 @@ export function createMovePathSystem(network: NetworkLayer, phaser: PhaserLayer)
       jungleExit(entityID, oldPosition, nonce, newPosition);
     } else {
       const nonce = getComponentValueStrict(Nonce, entityIndex).value;
+      const oldCommitment = poseidon(oldPosition.x, oldPosition.y, nonce);
       const {proofData, publicSignals} = await jungleMoveProver({
         oldX: oldPosition.x, oldY: oldPosition.y, oldNonce: nonce,
-        newX: newPosition.x, newY: newPosition.y,
+        newX: newPosition.x, newY: newPosition.y, oldCommitment,
         ...getMapTileMerkleData(ParsedMapData, newPosition)
       });
-      jungleMove(entityID, publicSignals[1], proofData);
+      const newCommitment = publicSignals[0];
+      jungleMove(entityID, newCommitment, proofData);
       setPersistedComponent(Nonce, entityIndex, {value: nonce + 1});
     }
 

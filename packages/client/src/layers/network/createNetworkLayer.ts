@@ -106,8 +106,8 @@ export async function createNetworkLayer(config: GameConfig) {
     systems['zkhunt.system.JungleEnter'].executeTyped(entity, newPosition, commitment, proofData);
   }
 
-  function jungleMove(entity: EntityID, commitment: BigNumberish, proofData: string[]) {
-    systems['zkhunt.system.JungleMove'].executeTyped(entity, commitment, proofData);
+  function jungleMove(entity: EntityID, newCommitment: BigNumberish, proofData: string[]) {
+    systems['zkhunt.system.JungleMove'].executeTyped(entity, newCommitment, proofData);
   }
 
   function jungleExit(entity: EntityID, oldPosition: Coord, oldPositionNonce: number, newPosition: Coord) {
@@ -152,8 +152,8 @@ export async function createNetworkLayer(config: GameConfig) {
     systems['zkhunt.system.HiddenSearchResponse'].executeTyped(entity, cipherText, encryptionNonce, nullifier, proofData);
   }
 
-  function hiddenSearchLiquidate(hiddenChallengeEntity: EntityID, challengedEntity: EntityID, nullifier: BigNumberish, proofData: BigNumberish[]) {
-    systems['zkhunt.system.HiddenSearchLiquidation'].executeTyped(hiddenChallengeEntity, challengedEntity, nullifier, proofData);
+  function hiddenSearchLiquidate(hiddenChallengeEntity: EntityID, challengedEntity: EntityID, proofData: BigNumberish[]) {
+    systems['zkhunt.system.HiddenSearchLiquidation'].executeTyped(hiddenChallengeEntity, challengedEntity, proofData);
   }
 
   function loot(entity: EntityID, entityToLoot: EntityID) {
@@ -165,7 +165,7 @@ export async function createNetworkLayer(config: GameConfig) {
   }
 
   function liquidate(entity: EntityID, challengeTilesEntity: EntityID) {
-    systems['zkhunt.system.Liquidation'].executeTyped(entity, challengeTilesEntity);
+    return systems['zkhunt.system.Liquidation'].executeTyped(entity, challengeTilesEntity);
   }
 
   // --- CONTEXT --------------------------------------------------------------------

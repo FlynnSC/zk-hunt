@@ -217,7 +217,7 @@ export function createChallengeCreationSystem(network: NetworkLayer, phaser: Pha
                 poseidonChainRoot([...challengeTilesXValues, ...challengeTilesYValues]),
                 challengedEntity, sharedKey[0], nullifierNonce
               );
-              const nullifierQueue = getSingletonComponentValueStrict(NullifierQueue);
+              const nullifierQueue = getComponentValueStrict(NullifierQueue, challengedEntityIndex);
               if (!nullifierQueue.queue.map(toBigInt).includes(nullifier)) {
                 console.log('Liquidating >:D');
                 const nullifierMerkleQueueValues = [
@@ -236,7 +236,7 @@ export function createChallengeCreationSystem(network: NetworkLayer, phaser: Pha
                   nullifierMerkleQueueRoot: poseidonChainRoot(nullifierMerkleQueueValues)
                 }).then(({proofData}) => {
                   hiddenSearchLiquidate(
-                    hiddenChallengeEntity, world.entities[challengedEntityIndex], nullifier, proofData
+                    hiddenChallengeEntity, world.entities[challengedEntityIndex], proofData
                   );
 
                   resolveChallengeTiles(phaser, challengeTilesEntity);

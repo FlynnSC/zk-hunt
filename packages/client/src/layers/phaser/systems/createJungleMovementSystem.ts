@@ -16,17 +16,19 @@ import {Coord} from '@latticexyz/utils';
 import {Tileset} from '../assets/tilesets/overworldTileset';
 import {setPersistedComponent} from '../../../utils/persistedComponent';
 import {indexToPosition, positionToIndex} from '../../../utils/coords';
+import {poseidon} from '../../../utils/secretSharing';
+import {addCoords} from '@latticexyz/phaserx';
 
 export function createJungleMovementSystem(network: NetworkLayer, phaser: PhaserLayer) {
   const {
     world,
-    components: {JungleMoveCount, RevealedPotentialPositions}
+    components: {JungleMoveCount, RevealedPotentialPositions, PositionCommitment}
   } = network;
 
   const {
     scenes: {Main: {maps: {MainMap}}},
     components: {
-      LocalPosition, MovePath, PotentialPositions, LocallyControlled, LocalJungleMoveCount,
+      LocalPosition, MovePath, PotentialPositions, LocallyControlled, LocalJungleMoveCount, Nonce,
       LastKnownPositions, ParsedMapData
     }
   } = phaser;
@@ -71,6 +73,24 @@ export function createJungleMovementSystem(network: NetworkLayer, phaser: Phaser
   defineComponentSystem(world, JungleMoveCount, ({entity, value}) => {
     const newJungleMoveCount = Number(value[0]?.value ?? 0);
     if (newJungleMoveCount > 0) {
+      // If this is an opponent unit that has been caught in a search, and so the nonce is known,
+      // then figure out their new position by doing a commitment check rather than updating the
+      // local jungle move count and potential positions
+      if (!hasComponent(LocallyControlled, entity) && hasComponent(Nonce, entity)) {
+        const nonce = getComponentValueStrict(Nonce, entity).value;
+        const positionCommitment = BigInt(getComponentValueStrict(PositionCommitment, entity).value);
+        const position = getComponentValueStrict(LocalPosition, entity);
+        [[1, 0], [-1, 0], [0, 1], [0, -1]].forEach(([xOffset, yOffset]) => {
+          const newPosition = addCoords(position, {x: xOffset, y: yOffset});
+          const newNonce = nonce + 1;
+          if (poseidon(newPosition.x, newPosition.y, newNonce) === positionCommitment) {
+            setComponent(LocalPosition, entity, newPosition);
+            setComponent(Nonce, entity, {value: newNonce});
+          }
+        });
+        return;
+      }
+
       // Increments the local jungle move count (if it is defined) such that if the local value is
       // lower than the contract value due to private info reveal, then that information is
       // preserved, but if the contract jungle move count is lower than the local value then the
@@ -81,6 +101,7 @@ export function createJungleMovementSystem(network: NetworkLayer, phaser: Phaser
       });
     } else {
       removeComponent(LocalJungleMoveCount, entity);
+      if (!hasComponent(LocallyControlled, entity)) removeComponent(Nonce, entity);
     }
   });
 

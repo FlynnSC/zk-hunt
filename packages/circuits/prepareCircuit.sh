@@ -12,7 +12,8 @@ rm circuit_0000.zkey
 
 # Create contract, and rename contract name inside source file, update solidity version, and
 # refactor how the proof params are passed in from the generated version
-verifierName="${circuitName^}Verifier"
+verifierName="${circuitName}Verifier"
+verifierName=$(node ../titleCaseString.js $verifierName) # Mac safe way to capitalize the verifier name lmao
 fileName="../../contracts/src/dependencies/${verifierName}.sol"
 snarkjs zkey export solidityverifier circuit_final.zkey $fileName
 sed -i -e "s/contract Verifier/contract ${verifierName}/g" $fileName # Rename contract
@@ -25,6 +26,10 @@ sed -i "/memory c,/d" $fileName
 sed -i "s/a\[0\], a\[1\]/proofData[0], proofData[1]/g" $fileName
 sed -i "s/\[b\[0\]\[0\], b\[0\]\[1\]\], \[b\[1\]\[0\], b\[1\]\[1\]\]/[proofData[2], proofData[3]], [proofData[4], proofData[5]]/g" $fileName
 sed -i "s/c\[0\], c\[1\]/proofData[6], proofData[7]/g" $fileName
+sed -i "s/\/\/\/ @return r  bool true if proof is valid//g" $fileName
+sed -i "s/public view returns (bool r)/public view/g" $fileName
+sed -i "s/return true;/return;/g" $fileName
+sed -i "s/return false;/require(false, \"Invalid proof\");/g" $fileName
 
 # Create folder in static/circuits/ for the circuit if it doesn't already exist, and
 # copy over the necessary files

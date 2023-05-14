@@ -51,23 +51,21 @@ template HiddenSearchLiquidation (challengeTileCount) {
     );
     isEncryptionValid === 1;
 
-    // Calculates the merkleChainRoot of the challenge tiles
-    signal challengeTilesMerkleChainRoot <== CalcCoordsMerkleChainRoot(challengeTileCount)(
+    // Calculates the challenge tiles commitment
+    signal challengeTilesCommitment <== CalcCoordsMerkleChainRoot(challengeTileCount)(
         challengeTilesXValues, challengeTilesYValues
     );
 
     // Calculates the deterministic nullifier
     signal nullifier <== Poseidon(4)(
-        [challengeTilesMerkleChainRoot, challengedEntity, sharedKey[0], nullifierNonce]
+        [challengeTilesCommitment, challengedEntity, sharedKey[0], nullifierNonce]
     );
 
     // Ensures that the calculated nullifier is not part of the nullifier merkle queue
-    signal nullifierExistsWithinQueue, queueMerkleChainRoot;
-    (nullifierExistsWithinQueue, queueMerkleChainRoot) <== SetInclusion(nullifierMerkleQueueSize)(
-        nullifier, nullifierMerkleQueueValues
+    signal nullifierExistsWithinQueue <== SetInclusion(nullifierMerkleQueueSize)(
+        nullifier, nullifierMerkleQueueValues, nullifierMerkleQueueRoot
     );
     nullifierExistsWithinQueue === 0;
-    queueMerkleChainRoot === nullifierMerkleQueueRoot;
 }
 
 component main {

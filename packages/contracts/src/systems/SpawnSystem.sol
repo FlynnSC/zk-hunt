@@ -10,6 +10,7 @@ import {PositionComponent, ID as PositionComponentID, Position} from "../compone
 import {ControlledByComponent, ID as ControlledByComponentID} from "../components/ControlledByComponent.sol";
 import {PublicKeyComponent, ID as PublicKeyComponentID} from "../components/PublicKeyComponent.sol";
 import {MAP_SIZE} from "../Constants.sol";
+import {NullifierQueueComponent, ID as NullifierQueueComponentID, NullifierQueue} from "../components/NullifierQueueComponent.sol";
 
 uint256 constant ID = uint256(keccak256("zkhunt.system.Spawn"));
 
@@ -18,6 +19,7 @@ contract SpawnSystem is System {
   PositionComponent positionComponent;
   ControlledByComponent controlledByComponent;
   PublicKeyComponent publicKeyComponent;
+  NullifierQueueComponent nullifierQueueComponent;
 
   constructor(IWorld _world, address _components) System(_world, _components) {
     mapDataComponent = MapDataComponent(getAddressById(components, MapDataComponentID));
@@ -26,6 +28,7 @@ contract SpawnSystem is System {
       getAddressById(components, ControlledByComponentID)
     );
     publicKeyComponent = PublicKeyComponent(getAddressById(components, PublicKeyComponentID));
+    nullifierQueueComponent = NullifierQueueComponent(getAddressById(components, NullifierQueueComponentID));
   }
 
   function execute(bytes memory arguments) public returns (bytes memory) {
@@ -56,6 +59,7 @@ contract SpawnSystem is System {
     controlledByComponent.set(entity, msg.sender);
     publicKeyComponent.set(addressToEntity(msg.sender), publicKey);
     positionComponent.set(entity, spawnPosition);
+    nullifierQueueComponent.set(entity, NullifierQueue(new uint256[](10), 0));
     return entity;
   }
 }

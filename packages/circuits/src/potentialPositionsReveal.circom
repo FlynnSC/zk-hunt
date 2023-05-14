@@ -7,21 +7,20 @@ template potentialPositionsReveal(potentialPositionsCount) {
     signal input x, y, nonce, positionCommitment;
     signal input potentialPositionsXValues[potentialPositionsCount];
     signal input potentialPositionsYValues[potentialPositionsCount];
-
-    signal output out;
+    signal input potentialPositionsCommitment;
 
     // Checks that the supplied x and y match the commitment
     signal commitment <== Poseidon(3)([x, y, nonce]);
     commitment === positionCommitment;
 
-    // Checks that the passed (x, y) are part of the potential positions
-    signal positionIsIncluded, merkleChainRoot;
-    (positionIsIncluded, merkleChainRoot) <== CoordSetInclusion(potentialPositionsCount)(
-        x, y, potentialPositionsXValues, potentialPositionsYValues
+    // Checks that the passed (x, y) are part of the potential positions, and that they match the 
+    // commitment
+    signal positionIsIncluded <== CoordSetInclusion(potentialPositionsCount)(
+        x, y, potentialPositionsXValues, potentialPositionsYValues, potentialPositionsCommitment
     );
     positionIsIncluded === 1;
-
-    out <== merkleChainRoot;
 }
 
-component main {public [positionCommitment]} = potentialPositionsReveal(4);
+component main {
+    public [positionCommitment, potentialPositionsCommitment]
+} = potentialPositionsReveal(4);

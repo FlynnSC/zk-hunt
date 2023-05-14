@@ -59,17 +59,14 @@ contract RevealPotentialPositionsSystem is System {
   ) public returns (bytes memory) {
     ActionLib.verifyCanPerformAction(components, entity);
 
-    require(
-      potentialPositionsRevealVerifier.verifyProof(
-        proofData, 
-        [
-          poseidonSystem.coordsPoseidonChainRoot(
-            potentialPositions.xValues, potentialPositions.yValues
-          ),
-          positionCommitmentComponent.getValue(entity)
-        ]
-      ),
-      "Invalid proof"
+    potentialPositionsRevealVerifier.verifyProof(
+      proofData, 
+      [
+        positionCommitmentComponent.getValue(entity),
+        poseidonSystem.coordsPoseidonChainRoot(
+          potentialPositions.xValues, potentialPositions.yValues
+        )
+      ]
     );
 
     jungleMoveCountComponent.set(entity, 1);

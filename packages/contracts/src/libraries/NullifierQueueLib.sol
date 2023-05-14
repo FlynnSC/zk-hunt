@@ -7,20 +7,20 @@ import {NullifierQueueComponent, ID as NullifierQueueComponentID, NullifierQueue
 import {PoseidonSystem, ID as PoseidonSystemID} from "../systems/PoseidonSystem.sol";
 
 library NullifierQueueLib {
-  function pushNullifier(IUint256Component components, uint256 nullifier) internal {
+  function pushNullifier(IUint256Component components, uint256 entity, uint256 nullifier) internal {
     NullifierQueueComponent nullifierQueueComponent = NullifierQueueComponent(
       getAddressById(components, NullifierQueueComponentID)
     );
 
     // Increments the headIndex and places the new nullifier at that index
-    NullifierQueue memory nullifierQueue = nullifierQueueComponent.getValue(GodID);
+    NullifierQueue memory nullifierQueue = nullifierQueueComponent.getValue(entity);
     nullifierQueue.headIndex = (nullifierQueue.headIndex + 1) % nullifierQueueComponent.length();
     nullifierQueue.queue[nullifierQueue.headIndex] = nullifier;
 
-    nullifierQueueComponent.set(GodID, nullifierQueue);
+    nullifierQueueComponent.set(entity, nullifierQueue);
   }
 
-  function getRoot(IUint256Component components) internal returns (uint256) {
+  function getRoot(IUint256Component components, uint256 entity) internal returns (uint256) {
     PoseidonSystem poseidonSystem = PoseidonSystem(
       getSystemAddressById(components, PoseidonSystemID)
     );
@@ -28,7 +28,7 @@ library NullifierQueueLib {
       getAddressById(components, NullifierQueueComponentID)
     );
 
-    NullifierQueue memory nullifierQueue = nullifierQueueComponent.getValue(GodID);
+    NullifierQueue memory nullifierQueue = nullifierQueueComponent.getValue(entity);
 
     uint256 length = nullifierQueueComponent.length();
     uint256 root = poseidonSystem.poseidon2(

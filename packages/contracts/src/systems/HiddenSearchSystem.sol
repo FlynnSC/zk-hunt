@@ -58,18 +58,15 @@ contract HiddenSearchSystem is System {
 
     uint256[] memory challengerPublicKey = publicKeyComponent.getValue(addressToEntity(msg.sender));
 
-    require(
-      hiddenSearchVerifier.verifyProof(
-        proofData, 
-        [
-          positionCommitmentComponent.getValue(entity),
-          challengerPublicKey[0], challengerPublicKey[1], cipherText[0], cipherText[1], 
-          cipherText[2], cipherText[3], cipherText[4], cipherText[5], cipherText[6], cipherText[7], 
-          cipherText[8], cipherText[9], cipherText[10], cipherText[11], cipherText[12], 
-          encryptionNonce
-        ]
-      ),
-      "Invalid proof"
+    hiddenSearchVerifier.verifyProof(
+      proofData, 
+      [
+        positionCommitmentComponent.getValue(entity),
+        challengerPublicKey[0], challengerPublicKey[1], cipherText[0], cipherText[1], 
+        cipherText[2], cipherText[3], cipherText[4], cipherText[5], cipherText[6], cipherText[7], 
+        cipherText[8], cipherText[9], cipherText[10], cipherText[11], cipherText[12], 
+        encryptionNonce
+      ]
     );
 
     hiddenChallengeComponent.set(

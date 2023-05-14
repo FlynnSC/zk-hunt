@@ -51,11 +51,8 @@ contract JungleHitAvoidSystem is System {
       "Response for incorrect challenge type"
     );
 
-    require(
-      jungleHitAvoidVerifier.verifyProof(
-        proofData, [challengeTileSet.merkleChainRoot, positionCommitment]
-      ),
-      "Invalid proof"
+    jungleHitAvoidVerifier.verifyProof(
+      proofData, [positionCommitment, challengeTileSet.commitment]
     );
 
     PendingChallengeUpdateLib.remove(components, entity, challengeTilesEntity);

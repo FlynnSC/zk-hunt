@@ -21,6 +21,7 @@ import {
   resolveChallengeTiles
 } from './utils';
 import {getSingletonComponentValue} from '../../../../utils/singletonComponent';
+import {poseidonChainRoot} from '../../../../utils/secretSharing';
 
 export function createChallengeResponseSystem(network: NetworkLayer, phaser: PhaserLayer) {
   const {
@@ -43,9 +44,9 @@ export function createChallengeResponseSystem(network: NetworkLayer, phaser: Pha
 
     if (challengeTiles) {
       // If this challenge tiles entity doesn't have any associated pending challenges
-      // (challengeTiles.merkleChainRoot will be 0), then sets them all to resolved, otherwise sorts
+      // (challengeTiles.commitment will be 0), then sets them all to resolved, otherwise sorts
       // the challenge tiles into pending and resolved
-      if (challengeTiles.merkleChainRoot === '0x00') {
+      if (challengeTiles.commitment === '0x00') {
         resolveChallengeTiles(
           phaser, entity, pick(challengeTiles, ['xValues', 'yValues', 'challengeType'])
         );
@@ -120,12 +121,16 @@ export function createChallengeResponseSystem(network: NetworkLayer, phaser: Pha
             if (wasHit) {
               jungleHitReceive(entityID, challengeTilesEntityID, entityPosition, nonce);
             } else {
+              const hitTilesCommitment = poseidonChainRoot(
+                [...challengeTiles.xValues, ...challengeTiles.yValues]
+              );
               jungleHitAvoidProver({
                 ...entityPosition,
                 nonce,
                 positionCommitment: getComponentValueStrict(PositionCommitment, entity).value,
                 hitTilesXValues: challengeTiles.xValues,
-                hitTilesYValues: challengeTiles.yValues
+                hitTilesYValues: challengeTiles.yValues,
+                hitTilesCommitment
               }).then(({proofData}) => {
                 jungleHitAvoid(entityID, challengeTilesEntityID, proofData);
               });

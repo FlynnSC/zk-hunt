@@ -8,27 +8,30 @@ include "isEqualToAny.circom";
 
 // Returns whether the supplied value is included in the set, and well as the set merkle chain root
 template SetInclusion(setSize) {
-    signal input value, setValues[setSize];
+    signal input value, setValues[setSize], setMerkleChainRoot;
 
-    signal output out, setMerkleChainRoot;
+    signal output out;
 
     // Calculates and outputs the set merkle chain root
-    setMerkleChainRoot <== CalcMerkleChainRoot(setSize)(setValues);
+    signal merkleChainRoot <== CalcMerkleChainRoot(setSize)(setValues);
+    merkleChainRoot === setMerkleChainRoot;
 
     // Calculates and outputs whether the supplied value is part of the set
     out <== IsEqualToAny(setSize)(value, setValues);
 }
 
-// Returns whether the supplied (x, y) is included in the coord set, and well as the set merkle 
-// chain root
+// Returns whether the supplied (x, y) is included in the coord set, and checks that the coord set 
+// matches the supplied merkle chain root
 template CoordSetInclusion(setSize) {
     signal input x, y;
     signal input setXValues[setSize], setYValues[setSize];
+    signal input setMerkleChainRoot;
 
-    signal output out, setMerkleChainRoot;
+    signal output out;
 
-    // Calculates and outputs the set merkle chain root
-    setMerkleChainRoot <== CalcCoordsMerkleChainRoot(setSize)(setXValues, setYValues);
+    // Checks that the supplied merkle chain root matches the coord set
+    signal merkleChainRoot <== CalcCoordsMerkleChainRoot(setSize)(setXValues, setYValues);
+    merkleChainRoot === setMerkleChainRoot;
 
     // Calculates and outputs whether the supplied (x, y) is part of the coord set
     signal isXEquals[setSize];

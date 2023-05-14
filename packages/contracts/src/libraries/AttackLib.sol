@@ -88,14 +88,14 @@ library AttackLib {
     ChallengeTileSet memory challengeTileSet = ChallengeTileSet({
       xValues: challengeTilesXValues,
       yValues: challengeTilesYValues,
-      merkleChainRoot: 0,
+      commitment: 0,
       challengeType: ChallengeType.ATTACK,
       challenger: msg.sender,
       creationTimestamp: block.timestamp
     });
 
     if (pendingChallengeExists) {
-      challengeTileSet.merkleChainRoot = s.poseidonSystem.coordsPoseidonChainRoot(
+      challengeTileSet.commitment = s.poseidonSystem.coordsPoseidonChainRoot(
         challengeTilesXValues, challengeTilesYValues
       );
       s.challengeTilesComponent.set(challengeTilesEntity, challengeTileSet);

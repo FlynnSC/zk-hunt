@@ -13,7 +13,7 @@ uint256 constant ID = uint256(keccak256("zkhunt.component.ChallengeTiles"));
   struct ChallengeTileSet {
     uint16[] xValues;
     uint16[] yValues;
-    uint256 merkleChainRoot;
+    uint256 commitment;
     ChallengeType challengeType;
     address challenger;
     uint256 creationTimestamp;
@@ -32,7 +32,7 @@ contract ChallengeTilesComponent is Component {
     keys[1] = "yValues";
     values[1] = LibTypes.SchemaValue.UINT16_ARRAY;
 
-    keys[2] = "merkleChainRoot";
+    keys[2] = "commitment";
     values[2] = LibTypes.SchemaValue.UINT256;
 
     keys[3] = "challengeType";
@@ -47,17 +47,17 @@ contract ChallengeTilesComponent is Component {
 
   function set(uint256 entity, ChallengeTileSet memory value) public {
     set(entity, abi.encode(
-        value.xValues, value.yValues, value.merkleChainRoot, value.challengeType, value.challenger,
+        value.xValues, value.yValues, value.commitment, value.challengeType, value.challenger,
         value.creationTimestamp
       ));
   }
 
   function getValue(uint256 entity) public view returns (ChallengeTileSet memory) {
-    (uint16[] memory xValues, uint16[] memory yValues, uint256 merkleChainRoot,
+    (uint16[] memory xValues, uint16[] memory yValues, uint256 commitment,
     ChallengeType challengeType, address challenger, uint256 creationTimestamp) =
     abi.decode(getRawValue(entity), (uint16[], uint16[], uint256, ChallengeType, address, uint256));
     return ChallengeTileSet(
-      xValues, yValues, merkleChainRoot, challengeType, challenger, creationTimestamp
+      xValues, yValues, commitment, challengeType, challenger, creationTimestamp
     );
   }
 }

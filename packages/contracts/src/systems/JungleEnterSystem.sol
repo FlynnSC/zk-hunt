@@ -37,10 +37,7 @@ contract JungleEnterSystem is MoveSystem {
     uint256 commitment, 
     uint256[8] memory proofData
   ) public returns (bytes memory) {
-    require(
-      positionCommitmentVerifier.verifyProof(proofData, [commitment, newPosition.x, newPosition.y]),
-      "Invalid proof"
-    );
+    positionCommitmentVerifier.verifyProof(proofData, [commitment, newPosition.x, newPosition.y]);
 
     super.move(entity, newPosition, TileType.PLAINS, TileType.JUNGLE);
     positionCommitmentComponent.set(entity, commitment);

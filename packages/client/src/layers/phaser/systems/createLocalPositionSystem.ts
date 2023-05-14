@@ -75,10 +75,7 @@ export function createLocalPositionSystem(network: NetworkLayer, phaser: PhaserL
   // Forces a rerender if an entity dies, so that it shows the gold sprite
   defineComponentSystem(world, Dead, ({entity}) => {
     if (hasComponent(Position, entity)) {
-      setComponent(
-        LocalPosition, entity,
-        getComponentValue(LocalPosition, entity) ?? getComponentValueStrict(Position, entity)
-      );
+      setComponent(LocalPosition, entity, getComponentValueStrict(Position, entity));
     }
   });
 }

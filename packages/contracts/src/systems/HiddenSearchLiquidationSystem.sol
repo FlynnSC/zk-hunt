@@ -39,14 +39,13 @@ contract HiddenSearchLiquidationSystem is System {
   }
 
   function execute(bytes memory arguments) public returns (bytes memory) {
-    (uint256 hiddenChallengeEntity, uint256 challengedEntity, uint256 nullifier,
-    uint256[8] memory proofData) = abi.decode(arguments, (uint256, uint256, uint256, uint256[8]));
-    executeTyped(hiddenChallengeEntity, challengedEntity, nullifier, proofData);
+    (uint256 hiddenChallengeEntity, uint256 challengedEntity, uint256[8] memory proofData) 
+      = abi.decode(arguments, (uint256, uint256, uint256[8]));
+    executeTyped(hiddenChallengeEntity, challengedEntity, proofData);
   }
 
   function executeTyped(
-    uint256 hiddenChallengeEntity, uint256 challengedEntity, uint256 nullifier,
-    uint256[8] memory proofData
+    uint256 hiddenChallengeEntity, uint256 challengedEntity, uint256[8] memory proofData
   ) public returns (bytes memory) {
     address responder = controlledByComponent.getValue(challengedEntity);
     uint256[] memory responderPublicKey = publicKeyComponent.getValue(addressToEntity(responder));
@@ -65,10 +64,9 @@ contract HiddenSearchLiquidationSystem is System {
     );
 
     // Note below, the entity id is masked to ensure it fits into a field element
-    require(
-      hiddenSearchLiquidationVerifier.verifyProof(
-        proofData,
-        [
+    hiddenSearchLiquidationVerifier.verifyProof(
+      proofData,
+      [
         challengedEntity & fieldElemMask,
         responderPublicKey[0], responderPublicKey[1],
         challengerPublicKey[0], challengerPublicKey[1],
@@ -79,10 +77,8 @@ contract HiddenSearchLiquidationSystem is System {
         hiddenChallenge.cipherText[8], hiddenChallenge.cipherText[9],
         hiddenChallenge.cipherText[10], hiddenChallenge.cipherText[11],
         hiddenChallenge.cipherText[12], hiddenChallenge.encryptionNonce,
-        NullifierQueueLib.getRoot(components)
-        ]
-      ),
-      "Invalid proof"
+        NullifierQueueLib.getRoot(components, challengedEntity)
+      ]
     );
 
     LiquidationLib.liquidate(components, challengedEntity);

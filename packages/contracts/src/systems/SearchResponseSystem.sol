@@ -61,18 +61,15 @@ contract SearchResponseSystem is System {
       "Response for incorrect challenge type"
     );
 
-    require(
-      searchResponseVerifier.verifyProof(
-        proofData, 
-        [
-          challengeTiles.merkleChainRoot, positionCommitmentComponent.getValue(entity),
-          playerPublicKey[0], playerPublicKey[1], 
-          challengerPublicKey[0], challengerPublicKey[1],
-          cipherText[0], cipherText[1], cipherText[2], 
-          cipherText[3], encryptionNonce
-        ]
-      ),
-      "Invalid proof"
+    searchResponseVerifier.verifyProof(
+      proofData, 
+      [
+        positionCommitmentComponent.getValue(entity), challengeTiles.commitment,
+        playerPublicKey[0], playerPublicKey[1], 
+        challengerPublicKey[0], challengerPublicKey[1],
+        cipherText[0], cipherText[1], cipherText[2], 
+        cipherText[3], encryptionNonce
+      ]
     );
 
     // Setting the search result before updating the pending challenges is important, because the

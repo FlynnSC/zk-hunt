@@ -14,9 +14,7 @@ uint256 constant ID = uint256(keccak256("zkhunt.component.NullifierQueue"));
 contract NullifierQueueComponent is Component {
   uint8 public constant length = 10;
 
-  constructor(address world) Component(world, ID) {
-    set(GodID, NullifierQueue(new uint256[](10), 0));
-  }
+  constructor(address world) Component(world, ID) {}
 
   function getSchema() public pure override returns (string[] memory keys, LibTypes.SchemaValue[] memory values) {
     keys = new string[](2);

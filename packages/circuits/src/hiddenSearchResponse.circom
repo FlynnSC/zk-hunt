@@ -30,6 +30,7 @@ template HiddenSearchResponse (challengeTileCount) {
 
     signal input challengeTilesXValues[challengeTileCount];
     signal input challengeTilesYValues[challengeTileCount];
+    signal input challengeTilesCommitment;
     signal input nullifierNonce; // Used in the generation of the nullifier
 
     // Public inputs
@@ -58,11 +59,10 @@ template HiddenSearchResponse (challengeTileCount) {
     );
     isEncryptionValid === 1;
 
-    // Determines whether the supplied (x, y) were included in the challenge tiles, as well as
-    // calculating the merkle root
-    signal wasFound, challengeTilesMerkleChainRoot;
-    (wasFound, challengeTilesMerkleChainRoot) <== CoordSetInclusion(challengeTileCount)(
-        x, y, challengeTilesXValues, challengeTilesYValues
+    // Determines whether the supplied (x, y) were included in the challenge tiles, and checks the 
+    // challenge tiles match the commitment
+    signal wasFound <== CoordSetInclusion(challengeTileCount)(
+        x, y, challengeTilesXValues, challengeTilesYValues, challengeTilesCommitment
     );
 
     // Ensures that either the secret nonce corresponds to the position commitment, or that the
@@ -72,7 +72,7 @@ template HiddenSearchResponse (challengeTileCount) {
 
     // Calculates and outputs the deterministic nullifier
     nullifier <== Poseidon(4)(
-        [challengeTilesMerkleChainRoot, challengedEntity, sharedKey[0], nullifierNonce]
+        [challengeTilesCommitment, challengedEntity, sharedKey[0], nullifierNonce]
     );
 }
 

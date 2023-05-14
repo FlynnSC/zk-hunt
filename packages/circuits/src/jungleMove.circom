@@ -26,18 +26,24 @@ template CheckDiff(mapSize) {
     isOutsideMap === 0;
 }
 
-// Checks that move is valid (single cell orthogonal onto a jungle tile within map), and outputs
-// the old and new commitments so that they can be checked for validity
+// Checks that the old (x, y) supplied are the values that have been committed to, the move is valid 
+// (single cardinal step onto a jungle tile within map), and outputs the new commitment so that it 
+// can be checked in the contract
 template JungleMove(mapSize, merkleTreeDepth) {
-    signal input oldX, oldY, oldNonce;
+    signal input oldX, oldY, oldNonce, oldCommitment;
     signal input newX, newY;
 
-    // See MerkleDataBitAccess component for signal explanations
+    // See MerkleDataBitAccess template for signal explanations
     signal input mapDataMerkleLeaf, mapDataMerkleSiblings[merkleTreeDepth], mapDataMerkleRoot;
 
-    signal output oldCommit, newCommit;
+    signal output newCommitment;
 
-    // Check that movement is single cell orthogonal, and stays within the map
+    // Check that the supplied oldX, oldY and oldNonce match the oldCommitment stored in the 
+    // contract
+    signal commitment <== Poseidon(3)([oldX, oldY, oldNonce]);
+    commitment === oldCommitment;
+
+    // Check that movement is single cardinal step, and stays within the map
     signal xDiff <== CheckDiff(mapSize)(oldX, newX);
     signal yDiff <== CheckDiff(mapSize)(oldY, newY);
     xDiff + yDiff === 1;
@@ -48,10 +54,10 @@ template JungleMove(mapSize, merkleTreeDepth) {
         bitIndex, mapDataMerkleLeaf, mapDataMerkleSiblings, mapDataMerkleRoot
     );
     tileType === 1;
-
-    // Check commitments are correct
-    oldCommit <== Poseidon(3)([oldX, oldY, oldNonce]);
-    newCommit <== Poseidon(3)([newX, newY, oldNonce + 1]);
+    
+    // Calculates the new nonce and outputs the new commitment
+    signal newNonce <== oldNonce + 1;
+    newCommitment <== Poseidon(3)([newX, newY, newNonce]);
 }
 
-component main {public [mapDataMerkleRoot]} = JungleMove(31, 2);
+component main {public [oldCommitment, mapDataMerkleRoot]} = JungleMove(31, 2);

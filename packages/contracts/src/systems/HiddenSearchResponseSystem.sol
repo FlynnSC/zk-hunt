@@ -48,19 +48,16 @@ contract HiddenSearchResponseSystem is System {
     uint256[] memory responderPublicKey = publicKeyComponent.getValue(addressToEntity(msg.sender));
 
     // Note below, the entity id is masked to ensure it fits into a field element
-    require(
-      hiddenSearchResponseVerifier.verifyProof(
-        proofData, 
-        [
-          nullifier, entity & fieldElemMask, positionCommitmentComponent.getValue(entity),
-          responderPublicKey[0], responderPublicKey[1], cipherText[0], cipherText[1], 
-          cipherText[2], cipherText[3], encryptionNonce
-        ]
-      ),
-      "Invalid proof"
+    hiddenSearchResponseVerifier.verifyProof(
+      proofData, 
+      [
+        nullifier, entity & fieldElemMask, positionCommitmentComponent.getValue(entity),
+        responderPublicKey[0], responderPublicKey[1], cipherText[0], cipherText[1], 
+        cipherText[2], cipherText[3], encryptionNonce
+      ]
     );
 
     searchResultComponent.set(entity, SearchResult(cipherText, encryptionNonce));
-    NullifierQueueLib.pushNullifier(components, nullifier);
+    NullifierQueueLib.pushNullifier(components, entity, nullifier);
   }
 }

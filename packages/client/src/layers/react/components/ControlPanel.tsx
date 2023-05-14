@@ -10,7 +10,7 @@ import {potentialPositionsRevealProver} from '../../../utils/zkProving';
 import {Keypair, PrivKey} from 'maci-domainobjs';
 import {getGodIndexStrict} from '../../../utils/entity';
 import {setPersistedComponent} from '../../../utils/persistedComponent';
-import {testThing} from '../../../utils/secretSharing';
+import {poseidonChainRoot, testThing} from '../../../utils/secretSharing';
 import {
   getSingletonComponentValueStrict,
   hasSingletonComponent,
@@ -86,10 +86,14 @@ export function registerControlPanel() {
 
         const nonce = getComponentValueStrict(Nonce, selectedEntity).value;
         const positionCommitment = getComponentValueStrict(PositionCommitment, selectedEntity).value;
+        const potentialPositionsCommitment = poseidonChainRoot(
+          [...revealedPotentialPositions.xValues, ...revealedPotentialPositions.yValues]
+        );
         potentialPositionsRevealProver({
           x: entityPosition.x, y: entityPosition.y, nonce, positionCommitment,
           potentialPositionsXValues: revealedPotentialPositions.xValues,
-          potentialPositionsYValues: revealedPotentialPositions.yValues
+          potentialPositionsYValues: revealedPotentialPositions.yValues,
+          potentialPositionsCommitment
         }).then(({proofData}) => {
           revealPotentialPositions(
             world.entities[selectedEntity],

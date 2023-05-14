@@ -47,6 +47,7 @@ type JungleMoveProofInput = {
   newX: number;
   newY: number;
 
+  oldCommitment: BigNumberish;
   mapDataMerkleLeaf: BigNumberish;
   mapDataMerkleSiblings: BigNumberish[];
   mapDataMerkleRoot: BigNumberish;
@@ -61,6 +62,7 @@ type JungleHitAvoidProofInput = {
 
   hitTilesXValues: number[];
   hitTilesYValues: number[];
+  hitTilesCommitment: BigNumberish;
 };
 export const jungleHitAvoidProver = createProver<JungleHitAvoidProofInput>('jungleHitAvoid');
 
@@ -69,6 +71,7 @@ type PotentialPositionsRevealProofInput = {
   y: number;
   nonce: number;
   positionCommitment: BigNumberish;
+  potentialPositionsCommitment: BigNumberish;
 
   potentialPositionsXValues: number[];
   potentialPositionsYValues: number[];
@@ -88,6 +91,7 @@ type SearchResponseProofInput = {
 
   // Public inputs
   positionCommitment: BigNumberish;
+  challengeTilesCommitment: BigNumberish;
   responderPublicKey: BigNumberish[];
   challengerPublicKey: BigNumberish[];
   cipherText: BigNumberish[];
@@ -123,6 +127,7 @@ type HiddenSearchResponseProofInput = {
   secretNonce: number;
   challengeTilesXValues: number[];
   challengeTilesYValues: number[];
+  challengeTilesCommitment: BigNumberish;
   nullifierNonce: number;
 
   // Public inputs
