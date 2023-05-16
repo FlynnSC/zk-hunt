@@ -4,8 +4,8 @@
   "version": "0.2.0",
   "private": true,
   "scripts": {
-    "prepareCircuit": "bash prepareCircuit.sh",
-    "prepareAllCircuits": "bash prepareAllCircuits.sh"
+    "prepareCircuit": "node prepareCircuit.js",
+    "prepareAllCircuits": "node prepareAllCircuits.js"
   },
   "dependencies": {
     "circomlib": "^2.0.5",
