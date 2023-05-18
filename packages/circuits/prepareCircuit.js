@@ -4,7 +4,7 @@ const fs = require('fs');
 
 // Compile circuit and generate needed files
 const circuitName = process.argv[2];
-const randomness = crypto.randomBytes(256).toString('hex');
+const randomness = crypto.randomBytes(32).toString('hex');
 shell.cd('src');
 shell.exec(`circom "${circuitName}.circom" --r1cs --wasm`);
 shell.exec(`snarkjs groth16 setup "${circuitName}.r1cs" ../pot/pot14_final.ptau circuit_0000.zkey`);

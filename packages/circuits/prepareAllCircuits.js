@@ -4,7 +4,7 @@ const fs = require('fs');
 
 // Performs powers of tua ceremony if not already performed
 if (!fs.existsSync('pot')) {
-  const randomness = crypto.randomBytes(256).toString('hex');
+  const randomness = crypto.randomBytes(32).toString('hex');
   shell.mkdir('pot');
   shell.cd('pot');
   shell.exec('snarkjs powersoftau new bn128 14 pot14_0000.ptau -v');
